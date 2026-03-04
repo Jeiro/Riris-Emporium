@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+
+# Apps & Servers
+app/node_modules/
+app/dist/
+server/node_modules/
+server/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+app/.env.local
+server/.env
+
+# Editor folders
+.vscode/
+.idea/
+*.suo
+
+# System files
+.DS_Store
+Thumbs.db
