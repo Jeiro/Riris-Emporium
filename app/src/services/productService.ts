@@ -1,7 +1,6 @@
-import api from './api';
 import { supabase } from '../lib/supabase';
 import { mapSupabaseProductToFrontend } from '../lib/dataMapping';
-import type { ApiResponse, Product, ProductFilters, PaginationMeta } from '../types';
+import type { Product, ProductFilters, PaginationMeta } from '../types';
 
 interface ProductsResponse {
   data: Product[];
@@ -53,20 +52,7 @@ export const productService = {
       };
     } catch (error) {
       console.error('Supabase error fetching products:', error);
-      // Fallback to API
-      const params = new URLSearchParams();
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            params.append(key, String(value));
-          }
-        });
-      }
-      const response = await api.get<ApiResponse<Product[]>>(`/products?${params}`);
-      return {
-        data: response.data.data,
-        meta: response.data.meta!
-      };
+      throw error;
     }
   },
 
@@ -84,9 +70,7 @@ export const productService = {
       return mapSupabaseProductToFrontend(data);
     } catch (error) {
       console.error('Supabase error fetching product:', error);
-      // Fallback to API
-      const response = await api.get<ApiResponse<Product>>(`/products/${id}`);
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -105,9 +89,7 @@ export const productService = {
       return categories as string[];
     } catch (error) {
       console.error('Supabase error fetching categories:', error);
-      // Fallback to API
-      const response = await api.get<ApiResponse<string[]>>('/products/categories');
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -141,14 +123,7 @@ export const productService = {
       };
     } catch (error) {
       console.error('Supabase error fetching products by category:', error);
-      // Fallback to API
-      const response = await api.get<ApiResponse<Product[]>>(
-        `/products/category/${category}?page=${page}&limit=${limit}`
-      );
-      return {
-        data: response.data.data,
-        meta: response.data.meta!
-      };
+      throw error;
     }
   },
 
@@ -167,9 +142,7 @@ export const productService = {
       return (data || []).map(mapSupabaseProductToFrontend);
     } catch (error) {
       console.error('Supabase error fetching featured products:', error);
-      // Fallback to API
-      const response = await api.get<ApiResponse<Product[]>>(`/products/featured?limit=${limit}`);
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -199,9 +172,7 @@ export const productService = {
       return mapSupabaseProductToFrontend(newProduct);
     } catch (error) {
       console.error('Supabase error creating product:', error);
-      // Fallback to API
-      const response = await api.post<ApiResponse<Product>>('/products', data);
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -223,9 +194,7 @@ export const productService = {
       return mapSupabaseProductToFrontend(updatedProduct);
     } catch (error) {
       console.error('Supabase error updating product:', error);
-      // Fallback to API
-      const response = await api.put<ApiResponse<Product>>(`/products/${id}`, data);
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -236,8 +205,7 @@ export const productService = {
       if (error) throw error;
     } catch (error) {
       console.error('Supabase error deleting product:', error);
-      // Fallback to API
-      await api.delete<ApiResponse<void>>(`/products/${id}`);
+      throw error;
     }
   },
 
@@ -266,12 +234,7 @@ export const productService = {
       return mapSupabaseProductToFrontend(product);
     } catch (error) {
       console.error('Supabase error adding review:', error);
-      // Fallback to API
-      const response = await api.post<ApiResponse<Product>>(`/products/${productId}/reviews`, {
-        rating,
-        comment
-      });
-      return response.data.data;
+      throw error;
     }
   }
 };

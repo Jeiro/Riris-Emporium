@@ -1,6 +1,5 @@
-import api from './api';
 import { supabase } from '../lib/supabase';
-import type { ApiResponse, Order, Address, PaginationMeta } from '../types';
+import type { Order, Address, PaginationMeta } from '../types';
 
 interface OrdersResponse {
   data: Order[];
@@ -16,7 +15,7 @@ export const orderService = {
   ): Promise<Order> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -52,13 +51,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error creating order:', error);
-      // Fallback to API
-      const response = await api.post<ApiResponse<Order>>('/orders', {
-        shippingAddress,
-        billingAddress,
-        notes
-      });
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -66,7 +59,7 @@ export const orderService = {
   getOrders: async (params?: { page?: number; limit?: number; status?: string }): Promise<OrdersResponse> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -118,17 +111,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error fetching orders:', error);
-      // Fallback to API
-      const queryParams = new URLSearchParams();
-      if (params?.page) queryParams.append('page', String(params.page));
-      if (params?.limit) queryParams.append('limit', String(params.limit));
-      if (params?.status) queryParams.append('status', params.status);
-      
-      const response = await api.get<ApiResponse<Order[]>>(`/orders?${queryParams}`);
-      return {
-        data: response.data.data,
-        meta: response.data.meta!
-      };
+      throw error;
     }
   },
 
@@ -157,9 +140,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error fetching order:', error);
-      // Fallback to API
-      const response = await api.get<ApiResponse<Order>>(`/orders/${id}`);
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -192,9 +173,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error cancelling order:', error);
-      // Fallback to API
-      const response = await api.put<ApiResponse<Order>>(`/orders/${id}/cancel`);
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -246,19 +225,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error fetching all orders:', error);
-      // Fallback to API
-      const params = new URLSearchParams();
-      params.append('page', String(page));
-      params.append('limit', String(limit));
-      
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.search) params.append('search', filters.search);
-      
-      const response = await api.get<ApiResponse<Order[]>>(`/orders/admin/all?${params}`);
-      return {
-        data: response.data.data,
-        meta: response.data.meta!
-      };
+      throw error;
     }
   },
 
@@ -296,12 +263,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error updating order status:', error);
-      // Fallback to API
-      const response = await api.put<ApiResponse<Order>>(`/orders/${id}/status`, {
-        status,
-        trackingNumber
-      });
-      return response.data.data;
+      throw error;
     }
   },
 
@@ -357,9 +319,7 @@ export const orderService = {
       };
     } catch (error) {
       console.error('Supabase error fetching order stats:', error);
-      // Fallback to API
-      const response = await api.get<ApiResponse<any>>('/orders/admin/stats');
-      return response.data.data;
+      throw error;
     }
   }
 };
