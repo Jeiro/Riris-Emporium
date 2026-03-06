@@ -14,6 +14,8 @@ import { useCart } from '../hooks';
 import { useAuth } from '../hooks';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
+import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+import { toast } from 'sonner';
 
 export const Checkout = () => {
   const navigate = useNavigate();
@@ -59,6 +61,26 @@ export const Checkout = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const config = {
+    public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY,
+    tx_ref: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+    amount: calculatedTotal,
+    currency: 'NGN',
+    payment_options: 'card,mobilemoney,ussd',
+    customer: {
+      email: formData.email,
+      phone_number: formData.phone,
+      name: `${formData.firstName} ${formData.lastName}`.trim(),
+    },
+    customizations: {
+      title: 'Riri\'s Emporium',
+      description: 'Payment for items in cart',
+      logo: 'https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-online-shop-log.jpg',
+    },
+  };
+
+  const handleFlutterPayment = useFlutterwave(config as any);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -69,37 +91,53 @@ export const Checkout = () => {
         throw new Error('Please fill in all required fields');
       }
 
-      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      handleFlutterPayment({
+        callback: async (response) => {
+          if (response.status === "successful") {
+            const { data: orderData, error: orderError } = await supabase
+              .from('orders')
+              .insert([
+                {
+                  user_id: user!.id,
+                  order_number: config.tx_ref,
+                  total: calculatedTotal,
+                  status: 'processing',
+                  shipping_address: {
+                    address: formData.address,
+                    city: formData.city,
+                    state: formData.state,
+                    zipCode: formData.zipCode
+                  },
+                  items: items,
+                  payment_method: 'Flutterwave',
+                  payment_reference: response.transaction_id?.toString() || response.tx_ref,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }
+              ])
+              .select()
+              .single();
 
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert([
-          {
-            user_id: user!.id,
-            order_number: orderNumber,
-            total: calculatedTotal,
-            status: 'pending',
-            shipping_address: {
-              address: formData.address,
-              city: formData.city,
-              state: formData.state,
-              zipCode: formData.zipCode
-            },
-            items: items,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            if (orderError) {
+              console.error(orderError)
+              toast.error('Payment succeeded but failed to create order. Please contact support.');
+            } else {
+              clearCart();
+              setSuccess(true);
+              setTimeout(() => {
+                navigate(`/orders/${orderData.id}`);
+              }, 2500);
+            }
+          } else {
+            setError("Payment failed or was cancelled.");
           }
-        ])
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      clearCart();
-      setSuccess(true);
-      setTimeout(() => {
-        navigate(`/orders/${orderData.id}`);
-      }, 2500);
+          closePaymentModal();
+          setIsProcessing(false);
+        },
+        onClose: () => {
+          setIsProcessing(false);
+        },
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to complete checkout';
       setError(errorMessage);
@@ -258,7 +296,7 @@ export const Checkout = () => {
                       <CreditCard size={20} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-[#5D3A1A] text-sm">Paystack / Card Payment</p>
+                      <p className="font-bold text-[#5D3A1A] text-sm">Flutterwave / Card Payment</p>
                       <p className="text-[#A67B5B] text-[10px] uppercase tracking-widest font-bold">Secure Online Payment</p>
                     </div>
                     <div className="w-6 h-6 rounded-full border-4 border-[#8B5A2B] flex items-center justify-center">
@@ -352,7 +390,7 @@ export const Checkout = () => {
                   <div className="flex justify-center gap-4 opacity-40">
                     <img src="/visa-logo.png" alt="Visa" className="h-4 object-contain grayscale" />
                     <img src="/mastercard-logo.png" alt="Mastercard" className="h-4 object-contain grayscale" />
-                    <img src="/paystack-logo.png" alt="Paystack" className="h-4 object-contain" />
+                    <img src="/flutterwave-logo.png" alt="Flutterwave" className="h-4 object-contain" />
                   </div>
                 </div>
               </div>

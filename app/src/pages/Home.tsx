@@ -32,7 +32,7 @@ export const Home = () => {
 
   const features = [
     { icon: Truck, title: 'Free Shipping', description: 'On orders over ₦10,000', color: 'bg-emerald-50 text-emerald-600' },
-    { icon: Shield, title: 'Secure Payment', description: '100% secure with Paystack', color: 'bg-blue-50 text-blue-600' },
+    { icon: Shield, title: 'Secure Payment', description: '100% secure with Flutterwave', color: 'bg-blue-50 text-blue-600' },
     { icon: RefreshCw, title: 'Easy Returns', description: '30-day return policy', color: 'bg-amber-50 text-amber-600' },
     { icon: Headphones, title: '24/7 Support', description: 'Dedicated support team', color: 'bg-purple-50 text-purple-600' }
   ];

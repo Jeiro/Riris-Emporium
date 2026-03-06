@@ -22,7 +22,7 @@ interface PaymentsResponse {
 export const paymentService = {
   // Initialize payment (Simulated)
   initializePayment: async (orderId: string): Promise<InitializePaymentResponse> => {
-    // In a real app, this would call a backend function to initialize with Paystack
+    // In a real app, this would call a backend function to initialize with Flutterwave
     // Here we simulate it by returning a fake success and redirecting to a success page
     const reference = `REF_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 

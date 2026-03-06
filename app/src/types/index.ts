@@ -196,8 +196,8 @@ export interface Payment {
   _id: string;
   orderId: string;
   userId: string;
-  paystackReference: string;
-  paystackTransactionId?: string;
+  flutterwaveReference: string;
+  flutterwaveTransactionId?: string;
   amount: number;
   currency: string;
   status: 'pending' | 'success' | 'failed' | 'abandoned';

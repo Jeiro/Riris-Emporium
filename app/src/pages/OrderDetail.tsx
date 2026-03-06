@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Package, 
-  Truck, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  Package,
+  Truck,
+  CheckCircle2,
   Clock,
   MapPin,
   CreditCard,
@@ -75,7 +75,7 @@ const mockOrder: Order = {
     state: 'Lagos State',
     phone: '+234 123 456 7890'
   },
-  paymentMethod: 'Paystack - Card ending in 4242',
+  paymentMethod: 'Flutterwave - Card ending in 4242',
   trackingNumber: 'TRK123456789'
 };
 
@@ -182,14 +182,14 @@ export const OrderDetail = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
-            <Link 
+            <Link
               to="/orders"
               className="inline-flex items-center gap-2 text-[#A67B5B] hover:text-[#8B5A2B] transition-colors mb-2"
             >
               <ArrowLeft size={18} />
               Back to Orders
             </Link>
-            <h1 
+            <h1
               className="text-3xl lg:text-4xl font-bold text-[#5D3A1A]"
               style={{ fontFamily: 'Playfair Display, serif' }}
             >
@@ -257,7 +257,7 @@ export const OrderDetail = () => {
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <Link 
+                      <Link
                         to={`/product/${item.id}`}
                         className="font-medium text-[#5D3A1A] hover:text-[#8B5A2B] transition-colors"
                       >
@@ -349,7 +349,7 @@ export const OrderDetail = () => {
           <p className="text-[#A67B5B] mb-4">
             If you have any questions about your order, please contact our customer support team.
           </p>
-          <Link 
+          <Link
             to="/contact"
             className="inline-flex items-center gap-2 text-[#8B5A2B] hover:text-[#6B4423] font-medium transition-colors"
           >

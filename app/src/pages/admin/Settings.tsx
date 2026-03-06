@@ -153,7 +153,7 @@ export const AdminSettings = () => {
                           <Zap size={24} />
                         </div>
                         <div>
-                          <p className="font-bold text-[#5D3A1A]">Paystack Integration</p>
+                          <p className="font-bold text-[#5D3A1A]">Flutterwave Integration</p>
                           <p className="text-[10px] text-[#A67B5B] uppercase tracking-widest font-bold">Standard Primary Gateway</p>
                         </div>
                       </div>

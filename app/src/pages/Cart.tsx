@@ -190,7 +190,7 @@ export const CartPage = () => {
               </button>
 
               <p className="text-xs text-center text-[#A67B5B] flex items-center justify-center gap-1">
-                🔒 Secure checkout powered by Paystack
+                🔒 Secure checkout powered by Flutterwave
               </p>
             </div>
           </div>

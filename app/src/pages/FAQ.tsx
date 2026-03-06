@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ChevronDown, 
-  Search, 
-  Package, 
-  CreditCard, 
-  RotateCcw, 
-  Truck, 
+import {
+  ChevronDown,
+  Search,
+  Package,
+  CreditCard,
+  RotateCcw,
+  Truck,
   User,
   Shield,
   HelpCircle,
@@ -50,7 +50,7 @@ export const FAQ = () => {
       items: [
         {
           question: 'How do I place an order?',
-          answer: 'Placing an order is easy! Simply browse our products, add items to your cart, and proceed to checkout. You will need to create an account or sign in, provide your shipping address, and complete payment through our secure Paystack integration.'
+          answer: 'Placing an order is easy! Simply browse our products, add items to your cart, and proceed to checkout. You will need to create an account or sign in, provide your shipping address, and complete payment through our secure Flutterwave integration.'
         },
         {
           question: 'How long does shipping take?',
@@ -104,11 +104,11 @@ export const FAQ = () => {
       items: [
         {
           question: 'What payment methods do you accept?',
-          answer: 'We accept various payment methods including debit/credit cards (Visa, Mastercard, Verve), bank transfers, and USSD payments through our secure Paystack integration. All transactions are encrypted and secure.'
+          answer: 'We accept various payment methods including debit/credit cards (Visa, Mastercard, Verve), bank transfers, and USSD payments through our secure Flutterwave integration. All transactions are encrypted and secure.'
         },
         {
           question: 'Is my payment information secure?',
-          answer: 'Absolutely! We use Paystack, a PCI-DSS compliant payment processor, to handle all transactions. Your card details are never stored on our servers. All data is encrypted using industry-standard SSL technology.'
+          answer: 'Absolutely! We use Flutterwave, a PCI-DSS compliant payment processor, to handle all transactions. Your card details are never stored on our servers. All data is encrypted using industry-standard SSL technology.'
         },
         {
           question: 'Can I pay on delivery?',
@@ -209,7 +209,7 @@ export const FAQ = () => {
       item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.answer.toLowerCase().includes(searchQuery.toLowerCase())
     )
-  })).filter(category => 
+  })).filter(category =>
     activeCategory === 'all' || category.id === activeCategory
   );
 
@@ -220,7 +220,7 @@ export const FAQ = () => {
       {/* Hero Section */}
       <section className="relative py-20 lg:py-28 bg-[#5D3A1A]">
         <div className="absolute inset-0 opacity-10">
-          <div 
+          <div
             className="absolute inset-0"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
@@ -232,7 +232,7 @@ export const FAQ = () => {
             <p className="text-[#D4C4A8] uppercase tracking-widest text-sm mb-4">
               Help Center
             </p>
-            <h1 
+            <h1
               className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6"
               style={{ fontFamily: 'Playfair Display, serif' }}
             >
@@ -241,7 +241,7 @@ export const FAQ = () => {
             <p className="text-xl text-[#FAF7F2]/80 leading-relaxed mb-8">
               Find answers to common questions about orders, shipping, returns, and more.
             </p>
-            
+
             {/* Search Bar */}
             <div className="relative max-w-xl mx-auto">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A67B5B]" size={20} />
@@ -263,11 +263,10 @@ export const FAQ = () => {
           <div className="flex flex-wrap gap-3 justify-center">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeCategory === 'all'
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === 'all'
                   ? 'bg-[#8B5A2B] text-white'
                   : 'bg-[#F5F1E8] text-[#5D3A1A] hover:bg-[#E8DFD0]'
-              }`}
+                }`}
             >
               All Topics
             </button>
@@ -275,11 +274,10 @@ export const FAQ = () => {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                  activeCategory === category.id
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${activeCategory === category.id
                     ? 'bg-[#8B5A2B] text-white'
                     : 'bg-[#F5F1E8] text-[#5D3A1A] hover:bg-[#E8DFD0]'
-                }`}
+                  }`}
               >
                 <category.icon size={16} />
                 {category.title}
@@ -350,17 +348,17 @@ export const FAQ = () => {
         <div className="container-custom">
           <div className="bg-[#8B5A2B] rounded-2xl p-8 lg:p-12 text-center">
             <MessageCircle className="mx-auto text-white/80 mb-4" size={48} />
-            <h2 
+            <h2
               className="text-2xl lg:text-3xl font-bold text-white mb-4"
               style={{ fontFamily: 'Playfair Display, serif' }}
             >
               Still Have Questions?
             </h2>
             <p className="text-white/80 max-w-xl mx-auto mb-6">
-              Our customer support team is here to help. Reach out to us and we will 
+              Our customer support team is here to help. Reach out to us and we will
               get back to you within 24 hours.
             </p>
-            <Link 
+            <Link
               to="/contact"
               className="inline-flex items-center gap-2 bg-white text-[#8B5A2B] px-8 py-3 rounded-lg font-medium hover:bg-[#F5F1E8] transition-colors"
             >
