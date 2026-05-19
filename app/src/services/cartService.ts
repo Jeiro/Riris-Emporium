@@ -1,11 +1,11 @@
-import { supabase } from '../lib/supabase';
+import { supabase, getAuthUser } from '../lib/supabase';
 import type { Cart } from '../types';
 
 export const cartService = {
   // Get cart
   getCart: async (): Promise<Cart> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       // Handle guest users (not authenticated)
       if (!user) {
@@ -52,7 +52,7 @@ export const cartService = {
   // Add item to cart
   addItem: async (productId: string, itemData: { name: string; price: number; image: string; quantity: number }): Promise<Cart> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       if (!user) {
         throw new Error('User not authenticated');
@@ -116,7 +116,7 @@ export const cartService = {
   // Update item quantity
   updateItem: async (productId: string, quantity: number, variantId?: string): Promise<Cart> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       if (!user) {
         throw new Error('User not authenticated');
@@ -162,7 +162,7 @@ export const cartService = {
   // Remove item from cart
   removeItem: async (productId: string, variantId?: string): Promise<Cart> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       if (!user) {
         throw new Error('User not authenticated');
@@ -205,7 +205,7 @@ export const cartService = {
   // Clear cart
   clearCart: async (): Promise<Cart> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       if (!user) {
         throw new Error('User not authenticated');
@@ -235,7 +235,7 @@ export const cartService = {
   // Apply coupon
   applyCoupon: async (code: string): Promise<Cart> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       if (!user) {
         throw new Error('User not authenticated');
