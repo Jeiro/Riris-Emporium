@@ -10,7 +10,9 @@ export const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState<ProductFilters>({
@@ -40,10 +42,12 @@ export const Shop = () => {
       try {
         const cats = await productService.getCategories();
         setCategories(cats);
+        setCategoriesError(null);
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('Error fetching categories:', error);
-        }
+        const msg = (error as any)?.message || String(error);
+        setCategories([]);
+        setCategoriesError(msg);
+        if (import.meta.env.DEV) console.error('Error fetching categories:', error);
       }
     };
     fetchCategories();
@@ -56,10 +60,13 @@ export const Shop = () => {
       const response = await productService.getProducts(filters);
       setProducts(response.data);
       setTotal(response.meta.total);
+      setProductsError(null);
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Error fetching products:', error);
-      }
+      const msg = (error as any)?.message || String(error);
+      setProducts([]);
+      setTotal(0);
+      setProductsError(msg);
+      if (import.meta.env.DEV) console.error('Error fetching products:', error);
     } finally {
       setIsLoading(false);
     }
@@ -157,11 +164,25 @@ export const Shop = () => {
             </div>
 
             {/* Products Grid */}
-            <ProductGrid
-              products={products}
-              isLoading={isLoading}
-              emptyMessage="No products found matching your criteria"
-            />
+              {productsError ? (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="text-yellow-600 font-semibold">Notice</div>
+                    <div className="text-sm text-[#5D3A1A]">
+                      Products are temporarily unavailable. Please try again in a few moments.
+                      {import.meta.env.DEV && productsError ? (
+                        <div className="mt-2 text-xs text-[#A67B5B]">{productsError}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ProductGrid
+                  products={products}
+                  isLoading={isLoading}
+                  emptyMessage="No products found matching your criteria"
+                />
+              )}
 
             {/* Pagination */}
             {totalPages > 1 && (
