@@ -71,7 +71,7 @@ riri5/
 
 ## 🔐 Environment Setup
 
-Create `app/.env.local`:
+Create `app/.env.local` (or `app/.env` for local dev):
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
@@ -79,6 +79,11 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 Get these from [Supabase Dashboard](https://app.supabase.com) → Settings → API.
+
+Notes:
+- Ensure your Supabase project's CORS settings include `http://localhost:5173` for local development.
+- If you don't set these env vars the app will still start, but data fetching will fail and you'll see warnings in the console.
+- For quick local admin testing only, set `localStorage['DEV_FORCE_ADMIN']='true'` in the browser console then reload (development only).
 
 ## 🚀 Key Features
 
@@ -300,5 +305,6 @@ export const exampleService = {
 ## 📄 License
 
 This project is private and not licensed for public use.
-#   R i r i s - E m p o r i u m  
+#   R i r i s - E m p o r i u m 
+ 
  
