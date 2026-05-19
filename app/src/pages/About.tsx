@@ -46,29 +46,6 @@ export const About = () => {
     }
   ];
 
-  const team = [
-    {
-      name: 'Amara Okafor',
-      role: 'Founder & CEO',
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80'
-    },
-    {
-      name: 'David Mensah',
-      role: 'Chief Operations Officer',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80'
-    },
-    {
-      name: 'Ngozi Adeleke',
-      role: 'Head of Design',
-      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80'
-    },
-    {
-      name: 'Emmanuel Ibrahim',
-      role: 'Customer Experience Lead',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80'
-    }
-  ];
-
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -213,37 +190,7 @@ export const About = () => {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16 lg:py-24 bg-[#F5F1E8]">
-        <div className="container-custom">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-[#A67B5B] uppercase tracking-widest text-sm mb-4">
-              Meet The Team
-            </p>
-            <h2 
-              className="text-3xl lg:text-4xl font-bold text-[#5D3A1A]"
-              style={{ fontFamily: 'Playfair Display, serif' }}
-            >
-              The People Behind Riris Emporium
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="text-center">
-                <div className="relative mb-4">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-48 h-48 rounded-full object-cover mx-auto shadow-lg"
-                  />
-                </div>
-                <h3 className="text-lg font-semibold text-[#5D3A1A]">{member.name}</h3>
-                <p className="text-[#A67B5B]">{member.role}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Team Section removed per request */}
 
       {/* CTA Section */}
       <section className="py-16">
