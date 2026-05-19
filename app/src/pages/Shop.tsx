@@ -10,7 +10,6 @@ export const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -42,11 +41,8 @@ export const Shop = () => {
       try {
         const cats = await productService.getCategories();
         setCategories(cats);
-        setCategoriesError(null);
       } catch (error) {
-        const msg = (error as any)?.message || String(error);
         setCategories([]);
-        setCategoriesError(msg);
         if (import.meta.env.DEV) console.error('Error fetching categories:', error);
       }
     };
