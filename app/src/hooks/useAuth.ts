@@ -24,9 +24,12 @@ export const useAuth = () => {
     }
   }, []);
 
+  // Dev-only force admin/auth toggle for local testing
+  const devForceAdmin = import.meta.env.DEV && localStorage.getItem('DEV_FORCE_ADMIN') === 'true';
+
   return {
-    user,
-    isAuthenticated,
+    user: devForceAdmin ? { ...(user || {}), role: 'admin', firstName: 'Dev' } : user,
+    isAuthenticated: devForceAdmin ? true : isAuthenticated,
     isLoading,
     error,
     login,
@@ -36,6 +39,6 @@ export const useAuth = () => {
     updateProfile,
     changePassword,
     clearError,
-    isAdmin: user?.role === 'admin'
+    isAdmin: devForceAdmin ? true : (user?.role === 'admin')
   };
 };
