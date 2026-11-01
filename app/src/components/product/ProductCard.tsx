@@ -1,6 +1,7 @@
+import { WishlistButton } from './WishlistButton';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Eye, Star } from 'lucide-react';
+import { ShoppingBag, Eye, Star } from 'lucide-react';
 import type { Product } from '../../types';
 import { isProductInStock } from '../../types';
 import { useCart, useAuth } from '../../hooks';
@@ -17,7 +18,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const { openCart, addNotification } = useUIStore();
   const [isHovered, setIsHovered] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [wishlistActive, setWishlistActive] = useState(false);
 
   if (!product) return null;
 
@@ -99,14 +99,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         {/* Quick Actions (right side) */}
         <div className={`absolute right-3 top-3 flex flex-col gap-2 transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-3'
           }`}>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setWishlistActive(!wishlistActive); }}
-            className={`w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 ${wishlistActive ? 'text-red-500' : 'text-[#5D3A1A] hover:text-red-400'
-              }`}
-            aria-label="Add to wishlist"
-          >
-            <Heart size={16} fill={wishlistActive ? 'currentColor' : 'none'} />
-          </button>
+          <WishlistButton productId={productId} size={16}
+            className="w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-[#5D3A1A] hover:text-red-400 transition-all duration-200 hover:scale-110" />
           <button
             className="w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-[#5D3A1A] hover:text-[#8B5A2B] transition-all duration-200 hover:scale-110"
             aria-label="Quick view"

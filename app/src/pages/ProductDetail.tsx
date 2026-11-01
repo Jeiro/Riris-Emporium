@@ -1,8 +1,8 @@
+import { WishlistButton } from '../components/product/WishlistButton';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ShoppingBag,
-  Heart,
   Share2,
   Truck,
   Shield,
@@ -294,9 +294,7 @@ export const ProductDetail = () => {
                   </span>
                 </button>
 
-                <button className="w-14 h-14 bg-white border border-[#E8DFD0] rounded-2xl flex items-center justify-center text-[#5D3A1A] hover:bg-[#F5F1E8] hover:text-[#8B5A2B] transition-all shadow-sm">
-                  <Heart size={22} />
-                </button>
+                <WishlistButton productId={product._id} size={22} className="w-14 h-14 bg-white border border-[#E8DFD0] rounded-2xl flex items-center justify-center text-[#5D3A1A] hover:bg-[#F5F1E8] hover:text-[#8B5A2B] transition-all shadow-sm" />
 
                 <button className="w-14 h-14 bg-white border border-[#E8DFD0] rounded-2xl flex items-center justify-center text-[#5D3A1A] hover:bg-[#F5F1E8] hover:text-[#8B5A2B] transition-all shadow-sm">
                   <Share2 size={22} />

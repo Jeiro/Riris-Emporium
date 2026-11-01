@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Heart, 
@@ -8,77 +8,68 @@ import {
   Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useWishlist } from '../hooks/useWishlist';
+import { productService } from '../services/productService';
+import { useCartStore } from '../store/cartStore';
+import { supabase } from '../lib/supabase';
+import { isProductInStock } from '../types';
 import type { Product } from '../types';
 
-// Mock wishlist data - in a real app, this would come from an API/database
-const mockWishlistItems: Product[] = [
-  {
-    _id: '1',
-    name: 'Classic Leather Handbag',
-    description: 'Elegant leather handbag perfect for any occasion',
-    price: 45000,
-    compareAtPrice: 55000,
-    images: ['https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80'],
-    category: 'Accessories',
-    subcategory: 'Bags',
-    tags: ['leather', 'handbag', 'classic'],
-    sku: 'BAG-001',
-    inventory: { quantity: 15, lowStockThreshold: 5 },
-    attributes: [],
-    variants: [],
-    ratings: { average: 4.8, count: 124 },
-    reviews: [],
-    isFeatured: true,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    _id: '2',
-    name: 'Premium Silk Scarf',
-    description: 'Luxurious silk scarf with beautiful patterns',
-    price: 15000,
-    images: ['https://images.unsplash.com/photo-1584030373081-f37b7bb4fa33?w=400&q=80'],
-    category: 'Accessories',
-    subcategory: 'Scarves',
-    tags: ['silk', 'scarf', 'premium'],
-    sku: 'SCF-001',
-    inventory: { quantity: 25, lowStockThreshold: 5 },
-    attributes: [],
-    variants: [],
-    ratings: { average: 4.6, count: 89 },
-    reviews: [],
-    isFeatured: false,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
-
 export const Wishlist = () => {
+  const wishlist = useWishlist();
+  const { userId, ids, isLoading, error } = wishlist;
+  const [attempt, setAttempt] = useState(0);
+  const [result, setResult] = useState<{ key: string; products: Product[]; error?: string }>();
+  const [pending, setPending] = useState<string | null>(null);
+  const busy = useRef(false);
+  const requestKey = JSON.stringify([userId, ids, attempt]);
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
-
-  const [wishlistItems, setWishlistItems] = useState<Product[]>(mockWishlistItems);
-
-  const removeFromWishlist = (productId: string) => {
-    setWishlistItems(prev => prev.filter(item => item._id !== productId));
-    toast.success('Item removed from wishlist');
+    if (!userId || !ids.length || error) return;
+    let active = true;
+    const requestedIds: string[] = JSON.parse(requestKey)[1];
+    productService.getProductsByIds(requestedIds).then(products => {
+      if (active) setResult({ key: requestKey, products });
+    }).catch(() => {
+      if (active) setResult({ key: requestKey, products: [], error: 'Could not load saved products. Please retry.' });
+    });
+    return () => { active = false; };
+  }, [requestKey, userId, ids.length, error]);
+  const wishlistItems = result?.key === requestKey ? result.products : [];
+  const loadError = error || (result?.key === requestKey ? result.error : null);
+  const removeFromWishlist = async (id: string) => {
+    try { await wishlist.remove(id); toast.success('Item removed from wishlist'); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Could not remove item'); }
   };
-
-  const addToCart = (product: Product) => {
-    toast.success(`${product.name} added to cart`);
+  const clearWishlist = async () => {
+    if (!confirm('Are you sure you want to clear your wishlist on this device?')) return;
+    try { await wishlist.clear(); toast.success('Wishlist cleared'); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Could not clear wishlist'); }
   };
-
-  const clearWishlist = () => {
-    if (confirm('Are you sure you want to clear your wishlist?')) {
-      setWishlistItems([]);
-      toast.success('Wishlist cleared');
-    }
+  const addToCart = async (product: Product) => {
+    if (busy.current || !isProductInStock(product)) return;
+    busy.current = true;
+    setPending(product._id);
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !userId || data.user?.id !== userId) throw new Error('Your account changed. Please sign in again.');
+      await useCartStore.getState().addItem(product._id, {
+        name: product.name, price: product.price, image: product.images[0] || '', quantity: 1,
+      });
+      toast.success(`${product.name} added to cart`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not add item to cart'); }
+    finally { busy.current = false; setPending(null); }
   };
-
-  if (wishlistItems.length === 0) {
+  if (isLoading || (!loadError && userId && ids.length > 0 && result?.key !== requestKey)) {
+    return <div role="status" className="container-custom py-24 text-center text-[#5D3A1A]">Loading your wishlist…</div>;
+  }
+  if (loadError) return <div role="alert" className="container-custom py-24 text-center text-[#5D3A1A]">
+    <h1 className="text-3xl font-bold mb-4">Wishlist unavailable</h1><p>{loadError}</p>
+    <button className="btn-primary mt-4" onClick={() => { setAttempt(value => value + 1); void wishlist.retry(); }}>Retry</button>
+    {userId && <button className="ml-4" onClick={clearWishlist}>Clear saved wishlist</button>}
+  </div>;
+  if (!userId) return <div className="container-custom py-24 text-center"><p>Sign in to view your wishlist.</p><Link to="/login">Sign in</Link></div>;
+  if (ids.length === 0) {
     return (
       <div className="min-h-screen">
         <div className="container-custom py-16 lg:py-24">
@@ -93,7 +84,7 @@ export const Wishlist = () => {
               Your Wishlist is Empty
             </h1>
             <p className="text-[#A67B5B] mb-8">
-              Save items you love to your wishlist and revisit them anytime.
+              Save items you love on this device. Your wishlist is private to your account here and does not sync between devices.
             </p>
             <Link 
               to="/shop"
@@ -128,7 +119,7 @@ export const Wishlist = () => {
               My Wishlist
             </h1>
             <p className="text-[#A67B5B] mt-2">
-              {wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'} saved
+              {ids.length} {ids.length === 1 ? 'item' : 'items'} saved
             </p>
           </div>
           <button
@@ -140,6 +131,13 @@ export const Wishlist = () => {
           </button>
         </div>
 
+        <p className="text-sm text-[#A67B5B] mb-6">Saved on this device for your account. Wishlists do not sync between devices.</p>
+        {ids.filter(id => !wishlistItems.some(product => product._id === id)).map(id => (
+          <div key={id} className="bg-white rounded-xl border border-[#E8DFD0] p-6 mb-4">
+            <p>A saved product is no longer available.</p>
+            <button onClick={() => removeFromWishlist(id)} className="text-red-600 mt-2">Remove unavailable item</button>
+          </div>
+        ))}
         {/* Wishlist Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlistItems.map((product) => (
@@ -150,7 +148,7 @@ export const Wishlist = () => {
               {/* Image */}
               <div className="relative aspect-square overflow-hidden bg-[#F5F1E8]">
                 <img
-                  src={product.images[0]}
+                  src={product.images[0] || undefined}
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -160,6 +158,7 @@ export const Wishlist = () => {
                   </div>
                 )}
                 <button
+                  aria-label={`Remove ${product.name} from wishlist`}
                   onClick={() => removeFromWishlist(product._id)}
                   className="absolute top-3 right-3 w-10 h-10 bg-white rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors shadow-md"
                 >
@@ -167,6 +166,7 @@ export const Wishlist = () => {
                 </button>
                 <Link
                   to={`/product/${product._id}`}
+                  aria-label={`View ${product.name}`}
                   className="absolute bottom-3 right-3 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#5D3A1A] hover:bg-[#F5F1E8] transition-colors shadow-md opacity-0 group-hover:opacity-100"
                 >
                   <Eye size={18} />
@@ -195,11 +195,12 @@ export const Wishlist = () => {
                   )}
                 </div>
                 <button
+                  disabled={pending !== null || !isProductInStock(product)}
                   onClick={() => addToCart(product)}
                   className="w-full btn-primary flex items-center justify-center gap-2"
                 >
                   <ShoppingBag size={18} />
-                  Add to Cart
+                  {pending === product._id ? 'Adding…' : isProductInStock(product) ? 'Add to Cart' : 'Out of stock'}
                 </button>
               </div>
             </div>

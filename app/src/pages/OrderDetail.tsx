@@ -11,75 +11,14 @@ import {
   Download,
   Printer
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { orderService } from '../services/orderService';
+import { useVerifiedUser } from '../hooks/useVerifiedUser';
+import type { CustomerOrder } from '../lib/orderDetails';
+import { isOrderId } from '../lib/orderDetails';
 
-interface OrderItem {
-  id: string;
-  name: string;
-  image: string;
-  quantity: number;
-  price: number;
-}
+const money = (value: number | undefined) => value === undefined ? 'Not recorded' : `₦${value.toLocaleString()}`;
 
-interface Order {
-  id: string;
-  orderNumber: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  createdAt: string;
-  items: OrderItem[];
-  subtotal: number;
-  shipping: number;
-  discount: number;
-  total: number;
-  shippingAddress: {
-    name: string;
-    street: string;
-    city: string;
-    state: string;
-    phone: string;
-  };
-  paymentMethod: string;
-  trackingNumber?: string;
-}
-
-// Mock order data
-const mockOrder: Order = {
-  id: '1',
-  orderNumber: 'RI-2024-001234',
-  status: 'shipped',
-  createdAt: '2024-01-15T10:30:00Z',
-  items: [
-    {
-      id: '1',
-      name: 'Classic Leather Handbag',
-      image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&q=80',
-      quantity: 1,
-      price: 45000
-    },
-    {
-      id: '2',
-      name: 'Premium Silk Scarf',
-      image: 'https://images.unsplash.com/photo-1584030373081-f37b7bb4fa33?w=200&q=80',
-      quantity: 2,
-      price: 15000
-    }
-  ],
-  subtotal: 75000,
-  shipping: 2500,
-  discount: 0,
-  total: 77500,
-  shippingAddress: {
-    name: 'John Doe',
-    street: '123 Main Street, Apt 4B',
-    city: 'Lagos',
-    state: 'Lagos State',
-    phone: '+234 123 456 7890'
-  },
-  paymentMethod: 'Flutterwave - Card ending in 4242',
-  trackingNumber: 'TRK123456789'
-};
-
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof Clock; description: string }> = {
   pending: {
     label: 'Pending',
     color: 'text-yellow-600',
@@ -119,25 +58,27 @@ const statusConfig = {
 
 export const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const identity = useVerifiedUser();
+  const [attempt, setAttempt] = useState(0);
+  const [result, setResult] = useState<{ key: string; order: CustomerOrder | null; error?: string }>();
+  const key = JSON.stringify([id, identity.userId, attempt]);
+  const invalid = !id || !isOrderId(id);
   useEffect(() => {
     window.scrollTo(0, 0);
-    // Simulate API call
-    setTimeout(() => {
-      setOrder(mockOrder);
-      setIsLoading(false);
-    }, 500);
-  }, [id]);
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = () => {
-    toast.success('Invoice downloaded successfully');
-  };
+    if (!id || invalid || !identity.userId) return;
+    let active = true;
+    orderService.getOrder(id).then(order => {
+      if (active) setResult({ key, order });
+    }).catch(error => {
+      if (active) setResult({ key, order: null, error: error instanceof Error ? error.message : 'Could not load this order. Please retry.' });
+    });
+    return () => { active = false; };
+  }, [id, invalid, identity.userId, key]);
+  const current = result?.key === key ? result : undefined;
+  const order = current?.order;
+  const error = identity.error || (invalid ? 'This order link is invalid.' : !identity.isLoading && !identity.userId ? 'Please sign in again to view this order.' : current?.error);
+  const isLoading = identity.isLoading || (!error && !current);
+  const handlePrint = () => window.print();
 
   if (isLoading) {
     return (
@@ -153,8 +94,9 @@ export const OrderDetail = () => {
         <div className="container-custom py-16 lg:py-24">
           <div className="max-w-md mx-auto text-center">
             <Package className="mx-auto text-[#D4C4A8] mb-4" size={48} />
-            <h1 className="text-2xl font-bold text-[#5D3A1A] mb-2">Order Not Found</h1>
-            <p className="text-[#A67B5B] mb-6">The order you are looking for does not exist.</p>
+            <h1 className="text-2xl font-bold text-[#5D3A1A] mb-2">{error ? 'Order unavailable' : 'Order Not Found'}</h1>
+            <p className="text-[#A67B5B] mb-6">{error || 'This order was not found in your account.'}</p>
+            {error && !invalid && <button className="btn-primary mr-3" onClick={() => { setAttempt(value => value + 1); void identity.retry(); }}>Retry</button>}
             <Link to="/orders" className="btn-primary">
               View All Orders
             </Link>
@@ -164,7 +106,7 @@ export const OrderDetail = () => {
     );
   }
 
-  const status = statusConfig[order.status];
+  const status = (Object.hasOwn(statusConfig, order.status) ? statusConfig[order.status] : undefined) || { label: order.status, color: 'text-[#5D3A1A]', bgColor: 'bg-[#F5F1E8]', icon: Package, description: 'Status reported by the store' };
   const StatusIcon = status.icon;
 
   return (
@@ -196,11 +138,11 @@ export const OrderDetail = () => {
               Order {order.orderNumber}
             </h1>
             <p className="text-[#A67B5B] mt-1">
-              Placed on {new Date(order.createdAt).toLocaleDateString('en-NG', {
+              {order.createdAt && Number.isFinite(Date.parse(order.createdAt)) ? `Placed on ${new Date(order.createdAt).toLocaleDateString('en-NG', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
-              })}
+              })}` : 'Order date not recorded'}
             </p>
           </div>
           <div className="flex gap-3">
@@ -212,8 +154,8 @@ export const OrderDetail = () => {
               Print
             </button>
             <button
-              onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 bg-[#8B5A2B] text-white rounded-lg hover:bg-[#6B4423] transition-colors"
+              disabled title="Invoice downloads are not available"
+              className="flex items-center gap-2 px-4 py-2 bg-[#8B5A2B] text-white rounded-lg hover:bg-[#6B4423] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download size={18} />
               Invoice
@@ -249,6 +191,7 @@ export const OrderDetail = () => {
                 <h2 className="text-xl font-semibold text-[#5D3A1A]">Order Items</h2>
               </div>
               <div className="divide-y divide-[#E8DFD0]">
+                {order.items.length === 0 && <p className="p-6 text-[#A67B5B]">Order items were not recorded.</p>}
                 {order.items.map((item) => (
                   <div key={item.id} className="p-6 flex gap-4">
                     <img
@@ -257,22 +200,22 @@ export const OrderDetail = () => {
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <Link
-                        to={`/product/${item.id}`}
+                      {item.productId ? <Link
+                        to={`/product/${item.productId}`}
                         className="font-medium text-[#5D3A1A] hover:text-[#8B5A2B] transition-colors"
                       >
                         {item.name}
-                      </Link>
+                      </Link> : <span className="font-medium text-[#5D3A1A]">{item.name}</span>}
                       <p className="text-[#A67B5B] text-sm mt-1">
-                        Qty: {item.quantity}
+                        Qty: {item.quantity ?? 'Not recorded'}
                       </p>
                       <p className="font-semibold text-[#8B5A2B] mt-2">
-                        ₦{item.price.toLocaleString()}
+                        {money(item.price)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-[#5D3A1A]">
-                        ₦{(item.price * item.quantity).toLocaleString()}
+                        {money(item.price !== undefined && item.quantity !== undefined ? item.price * item.quantity : undefined)}
                       </p>
                     </div>
                   </div>
@@ -291,22 +234,23 @@ export const OrderDetail = () => {
               <div className="p-6 space-y-3">
                 <div className="flex justify-between text-[#A67B5B]">
                   <span>Subtotal</span>
-                  <span>₦{order.subtotal.toLocaleString()}</span>
+                  <span>{money(order.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-[#A67B5B]">
                   <span>Shipping</span>
-                  <span>₦{order.shipping.toLocaleString()}</span>
+                  <span>{money(order.shipping)}</span>
                 </div>
-                {order.discount > 0 && (
+                <div className="flex justify-between text-[#A67B5B]"><span>Tax</span><span>{money(order.tax)}</span></div>
+                {order.discount !== undefined && order.discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>-₦{order.discount.toLocaleString()}</span>
+                    <span>-{money(order.discount)}</span>
                   </div>
                 )}
                 <div className="pt-3 border-t border-[#E8DFD0] flex justify-between">
                   <span className="font-semibold text-[#5D3A1A]">Total</span>
                   <span className="font-bold text-xl text-[#8B5A2B]">
-                    ₦{order.total.toLocaleString()}
+                    {money(order.total)}
                   </span>
                 </div>
               </div>
@@ -321,9 +265,9 @@ export const OrderDetail = () => {
                 </div>
               </div>
               <div className="p-6">
-                <p className="font-medium text-[#5D3A1A]">{order.shippingAddress.name}</p>
-                <p className="text-[#A67B5B] mt-1">{order.shippingAddress.street}</p>
-                <p className="text-[#A67B5B]">{order.shippingAddress.city}, {order.shippingAddress.state}</p>
+                <p className="font-medium text-[#5D3A1A]">{order.shippingAddress.name || 'Recipient name not recorded'}</p>
+                <p className="text-[#A67B5B] mt-1">{order.shippingAddress.street || 'Street address not recorded'}</p>
+                <p className="text-[#A67B5B]">{[order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.zipCode, order.shippingAddress.country].filter(Boolean).join(', ') || 'Location not recorded'}</p>
                 <p className="text-[#A67B5B] mt-2">{order.shippingAddress.phone}</p>
               </div>
             </div>
@@ -337,7 +281,8 @@ export const OrderDetail = () => {
                 </div>
               </div>
               <div className="p-6">
-                <p className="text-[#5D3A1A]">{order.paymentMethod}</p>
+                <p className="text-sm text-[#A67B5B] mb-2">Payment confirmation is not available on this page. Order status alone is not proof of payment.</p>
+                <p className="text-[#5D3A1A]">{order.paymentMethod || 'Not recorded'}</p>
               </div>
             </div>
           </div>

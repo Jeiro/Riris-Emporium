@@ -1,3 +1,5 @@
+import { isOrderId, mapCustomerOrder, OrderDetailError } from '../lib/orderDetails';
+import type { CustomerOrder } from '../lib/orderDetails';
 import { supabase } from '../lib/supabase';
 import type { Order, Address, PaginationMeta } from '../types';
 
@@ -115,33 +117,26 @@ export const orderService = {
     }
   },
 
-  // Get single order
-  getOrder: async (id: string): Promise<Order> => {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
-      return {
-        id: data.id,
-        userId: data.user_id,
-        items: data.items || [],
-        total: data.total,
-        status: data.status,
-        shippingAddress: data.shipping_address,
-        billingAddress: data.billing_address,
-        notes: data.notes,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-    } catch (error) {
-      console.error('Supabase error fetching order:', error);
-      throw error;
+  // Client checks complement (and cannot replace) database RLS.
+  getOrder: async (id: string): Promise<CustomerOrder | null> => {
+    if (!isOrderId(id)) throw new OrderDetailError('invalid', 'This order link is invalid.');
+    const orderId = id.toLowerCase();
+    const { data: auth, error: authError } = await supabase.auth.getUser();
+    if (authError || !auth.user) throw new OrderDetailError('auth', 'Please sign in again to view this order.');
+    const { data, error, status } = await supabase.from('orders').select('*')
+      .eq('id', orderId).eq('user_id', auth.user.id).maybeSingle();
+    if (error) {
+      if (status === 401 || status === 403 || error.code === '42501') {
+        throw new OrderDetailError('permission', 'You do not have permission to view this order.');
+      }
+      throw new OrderDetailError('load', 'Could not load this order. Please retry.');
     }
+    const { data: current, error: currentError } = await supabase.auth.getUser();
+    if (currentError || current.user?.id !== auth.user.id) {
+      throw new OrderDetailError('auth', 'Your account changed. Please reload your orders.');
+    }
+    if (!data || data.user_id !== auth.user.id || data.id !== orderId) return null;
+    return mapCustomerOrder(data);
   },
 
   // Cancel order

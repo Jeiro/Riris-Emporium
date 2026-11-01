@@ -11,7 +11,7 @@ import {
   Twitter,
   CheckCircle2
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { BUSINESS_EMAIL, prepareContactDraft } from '../lib/contact';
 
 export const Contact = () => {
   useEffect(() => {
@@ -24,47 +24,53 @@ export const Contact = () => {
     subject: '',
     message: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draft, setDraft] = useState<ReturnType<typeof prepareContactDraft> | null>(null);
+  const [error, setError] = useState('');
+  const [isCopying, setIsCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setDraft(null); setError(''); setCopied(false);
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success('Message sent successfully! We will get back to you soon.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setIsSubmitting(false);
+    setError(''); setCopied(false);
+    try { setDraft(prepareContactDraft(formData)); }
+    catch (error) { setDraft(null); setError(error instanceof Error ? error.message : 'Could not prepare your email.'); }
+  };
+  const copyDraft = async () => {
+    if (!draft || isCopying) return;
+    setIsCopying(true); setCopied(false); setError('');
+    try { await navigator.clipboard.writeText(draft.body); setCopied(true); }
+    catch { setError('Could not copy the draft. Select the text below and copy it manually.'); }
+    finally { setIsCopying(false); }
   };
 
   const contactInfo = [
     {
       icon: Mail,
       title: 'Email Us',
-      details: ['hello@ririsemporium.com', 'support@ririsemporium.com']
+      details: [BUSINESS_EMAIL]
     },
     {
       icon: Phone,
       title: 'Call Us',
-      details: ['+234 123 456 7890', '+234 987 654 3210']
+      details: ['Phone number to be confirmed']
     },
     {
       icon: MapPin,
       title: 'Visit Us',
-      details: ['123 Fashion Avenue', 'Lagos, Nigeria']
+      details: ['Store address to be confirmed']
     },
     {
       icon: Clock,
       title: 'Working Hours',
-      details: ['Mon - Fri: 9AM - 6PM', 'Sat: 10AM - 4PM']
+      details: ['Opening hours to be confirmed']
     }
   ];
 
@@ -147,7 +153,7 @@ export const Contact = () => {
             {/* Form */}
             <div>
               <p className="text-[#A67B5B] uppercase tracking-widest text-sm mb-4">
-                Send a Message
+                Prepare an Email
               </p>
               <h2 
                 className="text-3xl lg:text-4xl font-bold text-[#5D3A1A] mb-6"
@@ -156,18 +162,18 @@ export const Contact = () => {
                 How Can We Help?
               </h2>
               <p className="text-[#A67B5B] mb-8">
-                Fill out the form below and our team will get back to you within 24 hours.
+                Prepare an email to Ririsemporium@gmail.com. You will need to send it from your email app. This website does not send or store your message.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-[#5D3A1A] mb-2">
+                    <label htmlFor="contact-name" className="block text-sm font-medium text-[#5D3A1A] mb-2">
                       Your Name
                     </label>
                     <input
                       type="text"
-                      name="name"
+                      id="contact-name" name="name" maxLength={100}
                       value={formData.name}
                       onChange={handleChange}
                       required
@@ -176,12 +182,12 @@ export const Contact = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#5D3A1A] mb-2">
+                    <label htmlFor="contact-email" className="block text-sm font-medium text-[#5D3A1A] mb-2">
                       Email Address
                     </label>
                     <input
                       type="email"
-                      name="email"
+                      id="contact-email" name="email" maxLength={254}
                       value={formData.email}
                       onChange={handleChange}
                       required
@@ -192,11 +198,11 @@ export const Contact = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#5D3A1A] mb-2">
+                  <label htmlFor="contact-subject" className="block text-sm font-medium text-[#5D3A1A] mb-2">
                     Subject
                   </label>
                   <select
-                    name="subject"
+                    id="contact-subject" name="subject"
                     value={formData.subject}
                     onChange={handleChange}
                     required
@@ -213,11 +219,11 @@ export const Contact = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#5D3A1A] mb-2">
+                  <label htmlFor="contact-message" className="block text-sm font-medium text-[#5D3A1A] mb-2">
                     Message
                   </label>
                   <textarea
-                    name="message"
+                    id="contact-message" name="message" maxLength={2000}
                     value={formData.message}
                     onChange={handleChange}
                     required
@@ -229,21 +235,20 @@ export const Contact = () => {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
                   className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-70"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={18} />
-                      Send Message
-                    </>
-                  )}
+                  <Send size={18} />
+                  Prepare Email
                 </button>
+                {error && <p role="alert" className="text-red-600">{error}</p>}
+                {draft && <div className="bg-[#F5F1E8] p-4 rounded-xl space-y-3">
+                  <p role="status">Your draft is ready. Nothing has been sent. Open your email app, review the draft and send it yourself.</p>
+                  <a href={draft.mailto} className="btn-primary inline-flex">Open email app</a>
+                  <p>If no email app opens, copy the draft into an email to {BUSINESS_EMAIL}.</p>
+                  <textarea aria-label="Email draft" readOnly value={draft.body} rows={6} className="w-full p-3 border rounded-lg" />
+                  <button type="button" disabled={isCopying} onClick={copyDraft} className="text-[#8B5A2B] font-medium">{isCopying ? 'Copying…' : 'Copy draft'}</button>
+                  {copied && <p role="status">Draft copied. Paste it into your email app to send.</p>}
+                </div>}
               </form>
             </div>
 
@@ -259,19 +264,21 @@ export const Contact = () => {
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Riris Emporium Location"
+                  title="Map of Lagos; store location is not confirmed"
                 />
               </div>
 
+              <p className="text-sm text-[#A67B5B]">Map shows Lagos, not a confirmed store address.</p>
               {/* Social Links */}
               <div className="bg-white p-6 rounded-xl border border-[#E8DFD0]">
                 <h3 className="text-lg font-semibold text-[#5D3A1A] mb-4 flex items-center gap-2">
                   <MessageCircle size={20} className="text-[#8B5A2B]" />
                   Connect With Us
                 </h3>
+                <p className="text-sm text-[#A67B5B] mb-4">Social profiles to be confirmed.</p>
                 <div className="flex gap-4">
                   <a
-                    href="https://facebook.com"
+                    aria-disabled="true" aria-label="Facebook profile not yet confirmed"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-12 h-12 bg-[#8B5A2B]/10 rounded-lg flex items-center justify-center text-[#8B5A2B] hover:bg-[#8B5A2B] hover:text-white transition-colors"
@@ -279,7 +286,7 @@ export const Contact = () => {
                     <Facebook size={24} />
                   </a>
                   <a
-                    href="https://instagram.com"
+                    aria-disabled="true" aria-label="Instagram profile not yet confirmed"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-12 h-12 bg-[#8B5A2B]/10 rounded-lg flex items-center justify-center text-[#8B5A2B] hover:bg-[#8B5A2B] hover:text-white transition-colors"
@@ -287,7 +294,7 @@ export const Contact = () => {
                     <Instagram size={24} />
                   </a>
                   <a
-                    href="https://twitter.com"
+                    aria-disabled="true" aria-label="Twitter profile not yet confirmed"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-12 h-12 bg-[#8B5A2B]/10 rounded-lg flex items-center justify-center text-[#8B5A2B] hover:bg-[#8B5A2B] hover:text-white transition-colors"
@@ -301,14 +308,14 @@ export const Contact = () => {
               <div className="bg-[#8B5A2B] p-6 rounded-xl text-white">
                 <h3 className="text-lg font-semibold mb-2">Need Quick Support?</h3>
                 <p className="text-white/80 mb-4">
-                  Our customer service team is available 24/7 to assist you.
+                  Email us for assistance. Response times are not yet confirmed.
                 </p>
                 <a 
-                  href="tel:+2341234567890"
+                  href={`mailto:${BUSINESS_EMAIL}`}
                   className="inline-flex items-center gap-2 bg-white text-[#8B5A2B] px-4 py-2 rounded-lg font-medium hover:bg-[#F5F1E8] transition-colors"
                 >
-                  <Phone size={18} />
-                  Call Now
+                  <Mail size={18} />
+                  Email Us
                 </a>
               </div>
             </div>

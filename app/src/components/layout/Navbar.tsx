@@ -170,6 +170,9 @@ export const Navbar = () => {
                       <ShoppingBag size={16} className="text-[#A67B5B]" />
                       My Orders
                     </Link>
+                    <Link to="/wishlist" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#5D3A1A] hover:bg-[#F5F1E8]">
+                      <Heart size={16} className="text-[#A67B5B]" /> My Wishlist
+                    </Link>
                     {isAdmin && (
                       <Link
                         to="/admin"
@@ -244,6 +247,9 @@ export const Navbar = () => {
                   className="flex items-center gap-3 py-3 px-4 rounded-xl text-[#5D3A1A] hover:bg-[#F5F1E8] transition-colors text-sm"
                 >
                   <ShoppingBag size={16} className="text-[#A67B5B]" /> My Orders
+                </Link>
+                <Link to="/wishlist" onClick={toggleMobileMenu} className="flex items-center gap-3 py-3 px-4 rounded-xl text-[#5D3A1A] hover:bg-[#F5F1E8] transition-colors text-sm">
+                  <Heart size={16} className="text-[#A67B5B]" /> My Wishlist
                 </Link>
                 {isAdmin && (
                   <Link

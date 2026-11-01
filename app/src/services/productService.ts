@@ -8,6 +8,13 @@ interface ProductsResponse {
 }
 
 export const productService = {
+  getProductsByIds: async (ids: string[]): Promise<Product[]> => {
+    if (!ids.length) return [];
+    const { data, error } = await supabase.from('products').select('*').in('id', ids);
+    if (error) throw error;
+    return (data || []).map(mapSupabaseProductToFrontend);
+  },
+
   // Get all products
   getProducts: async (filters?: ProductFilters): Promise<ProductsResponse> => {
     try {

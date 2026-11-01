@@ -22,8 +22,6 @@ const Privacy = React.lazy(() => import('./pages/Privacy').then(m => ({ default:
 const Terms = React.lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 const Cookies = React.lazy(() => import('./pages/Cookies').then(m => ({ default: m.Cookies })));
 const SizeGuide = React.lazy(() => import('./pages/SizeGuide').then(m => ({ default: m.SizeGuide })));
-const Careers = React.lazy(() => import('./pages/Careers').then(m => ({ default: m.Careers })));
-const Press = React.lazy(() => import('./pages/Press').then(m => ({ default: m.Press })));
 const Wishlist = React.lazy(() => import('./pages/Wishlist').then(m => ({ default: m.Wishlist })));
 const CartPage = React.lazy(() => import('./pages/Cart').then(m => ({ default: m.CartPage })));
 const UserOrders = React.lazy(() => import('./pages/UserOrders').then(m => ({ default: m.UserOrders })));
@@ -98,8 +96,6 @@ function App() {
             <Route path="/terms" element={<Layout><Terms /></Layout>} />
             <Route path="/cookies" element={<Layout><Cookies /></Layout>} />
             <Route path="/size-guide" element={<Layout><SizeGuide /></Layout>} />
-            <Route path="/careers" element={<Layout><Careers /></Layout>} />
-            <Route path="/press" element={<Layout><Press /></Layout>} />
 
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />

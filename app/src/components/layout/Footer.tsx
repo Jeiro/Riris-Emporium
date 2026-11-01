@@ -23,10 +23,9 @@ export const Footer = () => {
     company: [
       { name: 'Our Story', href: '/about' },
       { name: 'Contact Us', href: '/contact' },
-      { name: 'Career Paths', href: '/careers' },
-      { name: 'Press Room', href: '/press' }
     ],
     support: [
+      { name: 'Size Guide', href: '/size-guide' },
       { name: 'Shipping Info', href: '/shipping' },
       { name: 'Track Order', href: '/profile' },
       { name: 'Common FAQs', href: '/faq' },
@@ -105,13 +104,13 @@ export const Footer = () => {
 
         {/* Contact Strip */}
         <div className="grid md:grid-cols-3 gap-6 py-10 border-t border-white/5">
-          <a href="mailto:hello@ririsemporium.com" className="group flex items-center gap-4 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all">
+          <a href="mailto:Ririsemporium@gmail.com" className="group flex items-center gap-4 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all">
             <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#8B5A2B] group-hover:scale-110 transition-transform">
               <Mail size={18} />
             </div>
             <div>
               <p className="text-[10px] font-bold text-[#A67B5B] uppercase tracking-wider">Email Us</p>
-              <p className="text-sm font-medium text-white">hello@ririsemporium.com</p>
+              <p className="text-sm font-medium text-white">Ririsemporium@gmail.com</p>
             </div>
           </a>
           <a href="tel:+2348072105878" className="group flex items-center gap-4 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all">
