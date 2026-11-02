@@ -20,16 +20,10 @@ import { toast } from 'sonner';
 export const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { items, total, clearCart } = useCart();
-
-  const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-  };
-
-  const calculatedSubtotal = total && total > 0 ? total : calculateSubtotal();
-  const calculatedTax = calculatedSubtotal * 0.075;
-  const calculatedShipping = calculatedSubtotal > 10000 ? 0 : 2500;
-  const calculatedTotal = calculatedSubtotal + calculatedTax + calculatedShipping;
+  const { items, clearCart, subtotal: calculatedSubtotal, tax: calculatedTax,
+    shipping: calculatedShipping, total: calculatedTotal, discount, isLoading: cartLoading,
+    status: cartStatus, error: cartError, retry, canCheckout, notices } = useCart();
+  // These are shared display estimates. Payment settlement still requires a trusted backend.
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -47,14 +41,10 @@ export const Checkout = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login?redirect=checkout');
-      return;
+    if (!cartLoading && !cartError && cartStatus === 'ready' && items.length === 0 && !success) {
+      navigate('/cart', { replace: true });
     }
-    if (items.length === 0 && !success) {
-      navigate('/cart');
-    }
-  }, [user, items, navigate, success]);
+  }, [cartLoading, cartError, cartStatus, items.length, navigate, success]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -145,6 +135,13 @@ export const Checkout = () => {
       setIsProcessing(false);
     }
   };
+
+  if (cartLoading) return <div role="status" className="min-h-screen flex items-center justify-center text-[#A67B5B]">Loading cart…</div>;
+  if (cartError) return <div role="alert" className="container-custom py-24 text-center text-[#5D3A1A]">
+    <h1 className="text-2xl font-bold mb-3">Checkout unavailable</h1><p>{cartError}</p>
+    <button className="btn-primary mt-4" onClick={() => void retry()}>Retry</button>
+  </div>;
+  if (!success && (cartStatus !== 'ready' || items.length === 0)) return null;
 
   if (success) {
     return (
@@ -308,7 +305,7 @@ export const Checkout = () => {
 
               <Button
                 type="submit"
-                disabled={isProcessing}
+                disabled={isProcessing || !canCheckout}
                 className="w-full bg-[#8B5A2B] hover:bg-[#6B4423] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-[#8B5A2B]/20 transition-all hover:-translate-y-1"
               >
                 {isProcessing ? (
@@ -334,6 +331,7 @@ export const Checkout = () => {
               </div>
 
               <div className="p-8 space-y-6">
+                {notices.map((notice, index) => <p key={index} role="status" className="text-sm text-[#A67B5B]">{notice}</p>)}
                 {/* Items */}
                 <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   {items.map((item, index) => (
@@ -370,6 +368,7 @@ export const Checkout = () => {
                     </span>
                   </div>
 
+                  {discount > 0 && <div className="flex justify-between text-sm text-[#A67B5B]"><span>Discount</span><span>-₦{discount.toLocaleString()}</span></div>}
                   <div className="pt-6 border-t border-[#F5F1E8] flex justify-between items-end">
                     <div>
                       <p className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest">Grand Total</p>

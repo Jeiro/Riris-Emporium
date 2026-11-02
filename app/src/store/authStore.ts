@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, LoginCredentials, RegisterData } from '../types';
 import { authService } from '../services';
-import { supabase } from '../lib/supabase';
+import { clearVerifiedUser, refreshVerifiedUser, verifiedSession } from '../lib/verifiedSession';
+
+let authIntent = 0;
+let profileRequest = 0;
 
 interface AuthState {
   user: User | null;
@@ -25,81 +28,63 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true,
       error: null,
 
       login: async (credentials) => {
-        set({ isLoading: true, error: null });
+        const intent = ++authIntent;
+        clearVerifiedUser();
+        set({ user: null, isAuthenticated: false, isLoading: true, error: null });
         try {
           const data = await authService.login(credentials);
-          set({
-            user: data.user,
-            isAuthenticated: true,
-            isLoading: false
-          });
-        } catch (error: any) {
-          set({
-            error: error.message || 'Login failed',
-            isLoading: false
-          });
+          if (intent !== authIntent) throw new Error('Sign-in was cancelled.');
+          await refreshVerifiedUser();
+          if (intent !== authIntent || verifiedSession.getState().userId !== data.user.id) throw new Error('Could not verify your account. Please sign in again.');
+          set({ user: data.user, isAuthenticated: true, isLoading: false });
+        } catch (error) {
+          if (intent === authIntent) set({ user: null, isAuthenticated: false, isLoading: false, error: error instanceof Error ? error.message : 'Login failed' });
           throw error;
         }
       },
 
       register: async (data) => {
-        set({ isLoading: true, error: null });
+        const intent = ++authIntent;
+        clearVerifiedUser();
+        set({ user: null, isAuthenticated: false, isLoading: true, error: null });
         try {
           const response = await authService.register(data);
-          set({
-            user: response.user,
-            isAuthenticated: true,
-            isLoading: false
-          });
-        } catch (error: any) {
-          const errorMessage = error.message || 'Registration failed';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
+          if (intent !== authIntent) throw new Error('Registration was cancelled.');
+          await refreshVerifiedUser();
+          if (intent !== authIntent) return;
+          const authenticated = verifiedSession.getState().userId === response.user.id;
+          set({ user: authenticated ? response.user : null, isAuthenticated: authenticated, isLoading: false });
+        } catch (error) {
+          if (intent === authIntent) set({ isLoading: false, error: error instanceof Error ? error.message : 'Registration failed' });
           throw error;
         }
       },
 
       logout: async () => {
-        try {
-          await authService.logout();
-        } catch (error) {
-          if (import.meta.env.DEV) console.error('Logout error:', error);
-        } finally {
-          set({
-            user: null,
-            isAuthenticated: false,
-            error: null
-          });
-        }
+        ++authIntent;
+        // Clear verified identity and all cart observers before sign-out can wait on network.
+        clearVerifiedUser();
+        set({ user: null, isAuthenticated: false, isLoading: false, error: null });
+        await authService.logout();
       },
 
-      // Checks live Supabase session instead of relying on localStorage tokens
       fetchUser: async () => {
+        const expected = verifiedSession.getState().userId;
+        const request = ++profileRequest;
+        if (!expected) return;
         set({ isLoading: true });
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            set({ user: null, isAuthenticated: false, isLoading: false });
-            return;
-          }
           const user = await authService.getMe();
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false
-          });
-        } catch (error: any) {
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false
-          });
+          if (request !== profileRequest || verifiedSession.getState().userId !== expected || user.id !== expected) return;
+          set({ user, isAuthenticated: true, isLoading: false, error: null });
+        } catch {
+          if (request === profileRequest && verifiedSession.getState().userId === expected) {
+            set({ user: null, isAuthenticated: false, isLoading: false, error: 'Could not load your account. Please sign in again.' });
+          }
         }
       },
 
@@ -142,3 +127,10 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Cross-tab/session changes invalidate persisted UI identity and old profile requests.
+verifiedSession.subscribe(identity => {
+  ++profileRequest;
+  useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: identity.isLoading || Boolean(identity.userId) });
+  if (identity.userId) void useAuthStore.getState().fetchUser();
+});

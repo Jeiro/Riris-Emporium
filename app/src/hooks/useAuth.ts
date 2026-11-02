@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useVerifiedUser } from './useVerifiedUser';
 import { useAuthStore } from '../store';
 
 export const useAuth = () => {
@@ -16,21 +16,18 @@ export const useAuth = () => {
     clearError
   } = useAuthStore();
 
-  useEffect(() => {
-    // Try to fetch user on mount if token exists
-    const token = localStorage.getItem('accessToken');
-    if (token && !user) {
-      fetchUser();
-    }
-  }, []);
+  const identity = useVerifiedUser();
+  const verified = !identity.isLoading && identity.userId === user?.id;
 
   // Dev-only force admin/auth toggle for local testing
   const devForceAdmin = import.meta.env.DEV && localStorage.getItem('DEV_FORCE_ADMIN') === 'true';
 
   return {
-    user: devForceAdmin ? { ...(user || {}), role: 'admin', firstName: 'Dev' } : user,
-    isAuthenticated: devForceAdmin ? true : isAuthenticated,
-    isLoading,
+    user: devForceAdmin ? { ...(user || {}), role: 'admin', firstName: 'Dev' } : verified ? user : null,
+    isAuthenticated: devForceAdmin ? true : verified && isAuthenticated,
+    isLoading: identity.isLoading || isLoading,
+    verificationError: identity.error,
+    retryVerification: identity.retry,
     error,
     login,
     register,

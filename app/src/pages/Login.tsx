@@ -1,3 +1,4 @@
+import { loginDestination } from '../lib/loginDestination';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
@@ -5,7 +6,7 @@ import { useAuth } from '../hooks';
 import { useUIStore } from '../store';
 
 interface LocationState {
-  from?: { pathname: string };
+  from?: { pathname: string; search?: string; hash?: string };
 }
 
 export const Login = () => {
@@ -17,7 +18,7 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as LocationState)?.from?.pathname || '/';
+  const from = loginDestination((location.state as LocationState)?.from, location.search);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

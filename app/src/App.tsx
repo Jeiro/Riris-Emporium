@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { Layout } from './components/layout/Layout';
 import { useAuth } from './hooks';
@@ -37,7 +37,8 @@ const EditProductPage = React.lazy(() => import('./pages/admin').then(m => ({ de
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, verificationError, retryVerification } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -47,8 +48,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  if (verificationError) return <div role="alert" className="container-custom py-24 text-center text-[#5D3A1A]">
+    <p>{verificationError}</p><button className="btn-primary mt-4" onClick={() => void retryVerification()}>Retry</button>
+  </div>;
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: { pathname: location.pathname, search: location.search, hash: location.hash } }} replace />;
   }
 
   return <>{children}</>;

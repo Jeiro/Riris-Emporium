@@ -1,21 +1,22 @@
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ArrowRight, Tag } from 'lucide-react';
 import { useCart, useAuth } from '../hooks';
 
 export const CartPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { items, isLoading, updateQuantity, removeItem, subtotal, tax, shipping, total, discount } = useCart();
+  const { user, isLoading: authLoading } = useAuth();
+  const location = useLocation();
+  const { items, isLoading, updateQuantity, removeItem, subtotal, tax, shipping, total, discount, error, retry, status, canCheckout, notices } = useCart();
 
   useEffect(() => {
-    if (!user) navigate('/login');
-  }, [user, navigate]);
+    if (!authLoading && !error && !user) navigate('/login', { replace: true, state: { from: location } });
+  }, [user, authLoading, error, navigate, location]);
 
   const getProductId = (productId: string | { _id: string }) =>
     typeof productId === 'string' ? productId : productId._id;
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2]">
         <div className="flex flex-col items-center gap-4">
@@ -26,6 +27,11 @@ export const CartPage = () => {
     );
   }
 
+  if (error) return <div role="alert" className="container-custom py-24 text-center text-[#5D3A1A]">
+    <h1 className="text-2xl font-bold mb-3">Cart unavailable</h1><p>{error}</p>
+    <button onClick={() => void retry()} className="btn-primary mt-4">Retry</button>
+  </div>;
+  if (status === 'guest') return null;
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4">
@@ -33,6 +39,7 @@ export const CartPage = () => {
           <div className="w-24 h-24 bg-[#F5F1E8] rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingBag size={36} className="text-[#D4C4A8]" />
           </div>
+          {notices.map((notice, index) => <p key={index} role="status" className="text-sm text-[#A67B5B] mb-3">{notice}</p>)}
           <h1 className="text-2xl font-bold text-[#5D3A1A] mb-3" style={{ fontFamily: 'Playfair Display, serif' }}>
             Your Cart is Empty
           </h1>
@@ -64,6 +71,7 @@ export const CartPage = () => {
           </div>
         </div>
 
+        {notices.map((notice, index) => <p key={index} role="status" className="text-[#A67B5B] mb-4">{notice}</p>)}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
@@ -95,6 +103,7 @@ export const CartPage = () => {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center border border-[#E8DFD0] rounded-xl overflow-hidden bg-[#FAF7F2]">
                       <button
+                        aria-label={`Decrease quantity of ${item.name}`}
                         onClick={() => updateQuantity(getProductId(item.productId), item.quantity - 1, item.variantId)}
                         disabled={isLoading || item.quantity <= 1}
                         className="w-9 h-9 flex items-center justify-center text-[#A67B5B] hover:bg-[#F5F1E8] disabled:opacity-40 transition-colors"
@@ -103,6 +112,7 @@ export const CartPage = () => {
                       </button>
                       <span className="w-10 text-center text-sm font-semibold text-[#5D3A1A]">{item.quantity}</span>
                       <button
+                        aria-label={`Increase quantity of ${item.name}`}
                         onClick={() => updateQuantity(getProductId(item.productId), item.quantity + 1, item.variantId)}
                         disabled={isLoading}
                         className="w-9 h-9 flex items-center justify-center text-[#A67B5B] hover:bg-[#F5F1E8] disabled:opacity-40 transition-colors"
@@ -111,6 +121,7 @@ export const CartPage = () => {
                       </button>
                     </div>
                     <button
+                      aria-label={`Remove ${item.name} from cart`}
                       onClick={() => removeItem(getProductId(item.productId), item.variantId)}
                       disabled={isLoading}
                       className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
@@ -176,14 +187,14 @@ export const CartPage = () => {
                   <span className="text-lg">Total</span>
                   <span className="text-xl text-[#8B5A2B]">₦{total.toLocaleString()}</span>
                 </div>
-                {subtotal >= 10000 && (
+                {subtotal > 10000 && (
                   <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✓ You qualify for free shipping!</p>
                 )}
               </div>
 
               <button
                 onClick={() => navigate('/checkout')}
-                disabled={isLoading || items.length === 0}
+                disabled={!canCheckout}
                 className="w-full btn-primary flex items-center justify-center gap-2 py-4 rounded-xl text-base mb-3"
               >
                 Proceed to Checkout <ArrowRight size={18} />

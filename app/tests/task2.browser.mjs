@@ -115,10 +115,8 @@ async function contains(text) { await page.getByText(text, { exact: false }).fir
 async function noText(text) { assert.ok(!(await page.locator('body').innerText()).includes(text), `Unexpected text: ${text}`); }
 async function switchUser(id, nextRole = 'customer') {
   userId = id; role = nextRole;
-  await page.evaluate(async ({ session, uiUser }) => {
+  await page.evaluate(async ({ session }) => {
     const { supabase } = await import('/src/lib/supabase.ts');
-    const { useAuthStore } = await import('/src/store/authStore.ts');
-    useAuthStore.setState({ user: uiUser, isAuthenticated: true, isLoading: false });
     const { error } = await supabase.auth.setSession(session);
     if (error) throw error;
   }, { session: session(id), uiUser: uiUser() });
@@ -139,12 +137,12 @@ try {
     await contains(`${products[0].name} added to cart`);
     assert.equal(carts.get(A).items[0].productId, P);
     await go('/cart'); await contains('Shopping Cart'); await contains(products[0].name);
-    assert.ok(requests.some(r => r.path === '/rest/v1/carts' && r.method === 'PATCH'));
+    assert.ok(requests.some(r => r.path === '/rest/v1/carts' && ['POST', 'PATCH'].includes(r.method)));
   });
   await check('Cart failure does not display success', async () => {
     await go('/wishlist'); await contains(products[0].name); cartFails = true;
     await page.getByRole('button', { name: 'Add to Cart', exact: true }).click();
-    await contains('Could not add item to cart');
+    await contains('Could not save your cart');
     await noText(`${products[0].name} added to cart`); cartFails = false;
   });
   await check('Same-page account switch hides A wishlist; B empty; A restored', async () => {
@@ -229,18 +227,14 @@ try {
     const routes = [...app.matchAll(/path="([^"]+)"/g)].map(m => m[1]).filter(p => p !== '*');
     const valid = path => routes.some(r => new RegExp('^' + r.replace(':id', '[^/]+') + '$').test(path));
     for (const path of routes) {
-      if (path === '/checkout') {
-        // Existing checkout redirects before the cart loads on a direct visit.
-        await go('/cart'); await contains('Shopping Cart');
-        await page.getByRole('button', { name: 'Proceed to Checkout' }).click();
-      } else await go(path.replace(':id', path.startsWith('/orders/') ? O : P));
+      await go(path.replace(':id', path.startsWith('/orders/') ? O : P));
       await page.locator('h1, h2').first().waitFor();
       await noText('Page Not Found');
       assert.equal(new URL(page.url()).pathname, path.replace(':id', path.startsWith('/orders/') ? O : P), `Unexpected redirect from ${path}`);
       const links = await page.locator('header a[href], footer a[href]').evaluateAll(els => els.map(e => e.getAttribute('href')));
       for (const href of links.filter(h => h?.startsWith('/') && !h.startsWith('//'))) assert.ok(valid(new URL(href, origin).pathname), `Broken navbar/footer route ${href}`);
     }
-    console.log(`Verified ${routes.length} configured routes (checkout through loaded cart)`);
+    console.log(`Verified ${routes.length} configured routes (including direct checkout)`);
   });
   await check('Careers and Press use normal 404; no remaining navigation links', async () => {
     for (const path of ['/careers', '/press']) { await go(path); await contains('Page Not Found'); assert.equal(await page.locator('a[href="/careers"], a[href="/press"]').count(), 0); }
@@ -269,7 +263,8 @@ try {
     authFails = false; await page.getByRole('button', { name: 'Retry', exact: true }).click(); await contains('Your Wishlist is Empty');
     await go(`/orders/${O}`); await contains('Order FIXTURE-ORDER-001');
     await page.evaluate(async () => { const { supabase } = await import('/src/lib/supabase.ts'); await supabase.auth.signOut(); });
-    await contains('Please sign in again to view this order'); await noText('FIXTURE-ORDER-001');
+    await contains('Welcome back'); await noText('FIXTURE-ORDER-001');
+    await go('/shop');
     await switchUser(A);
   });
   await check('Out-of-stock wishlist item cannot be added to cart', async () => {

@@ -11,22 +11,13 @@ export const CartDrawer = () => {
     isLoading = false,
     updateQuantity,
     removeItem,
-    subtotal = 0,
+    subtotal: calculatedSubtotal,
+    tax: calculatedTax,
+    shipping: calculatedShipping,
+    total: calculatedTotal,
+    discount, error, retry, notices, canCheckout, status,
   } = useCart();
   const navigate = useNavigate();
-
-  // Calculate totals from items if useCart doesn't provide them
-  const calculateSubtotal = () => {
-    return items.reduce((sum, item) =>
-      sum + ((item.price || 0) * (item.quantity || 1)),
-      0
-    );
-  };
-
-  const calculatedSubtotal = subtotal && subtotal > 0 ? subtotal : calculateSubtotal();
-  const calculatedTax = calculatedSubtotal * 0.075;
-  const calculatedShipping = 0; // Free shipping
-  const calculatedTotal = calculatedSubtotal + calculatedTax + calculatedShipping;
 
   // Close on escape key
   useEffect(() => {
@@ -76,6 +67,7 @@ export const CartDrawer = () => {
             </h2>
           </div>
           <button
+            aria-label="Close cart"
             onClick={closeCart}
             className="p-2 text-[#5D3A1A] hover:bg-[#F5F1E8] rounded-lg transition-colors"
           >
@@ -84,11 +76,17 @@ export const CartDrawer = () => {
         </div>
 
         {/* Content */}
-        {items.length === 0 ? (
+        {isLoading ? <div role="status" className="flex-1 p-8 text-center text-[#A67B5B]">Loading cart…</div>
+          : error ? <div role="alert" className="flex-1 p-8 text-center text-[#5D3A1A]">
+            <p>{error}</p><button className="btn-primary mt-4" onClick={() => void retry()}>Retry</button>
+          </div>
+          : status === 'guest' ? <div className="flex-1 p-8 text-center"><p>Sign in to view your cart.</p><button className="btn-primary mt-4" onClick={() => { closeCart(); navigate('/login', { state: { from: { pathname: '/cart' } } }); }}>Sign in</button></div>
+          : items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="w-24 h-24 bg-[#F5F1E8] rounded-full flex items-center justify-center mb-6">
               <ShoppingBag className="text-[#A67B5B]" size={40} />
             </div>
+            {notices.map((notice, index) => <p key={index} role="status" className="text-sm text-[#A67B5B] mb-3">{notice}</p>)}
             <h3 className="text-xl font-semibold text-[#5D3A1A] mb-2">
               Your cart is empty
             </h3>
@@ -106,6 +104,7 @@ export const CartDrawer = () => {
           <>
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+              {notices.map((notice, index) => <p key={index} role="status" className="text-sm text-[#A67B5B] mb-3">{notice}</p>)}
               <div className="space-y-4">
                 {items.map((item, index) => (
                   <div
@@ -134,7 +133,7 @@ export const CartDrawer = () => {
                           <button
                             onClick={() =>
                               updateQuantity(
-                                typeof item.productId === 'string' ? item.productId : (item.productId as any)._id,
+                                item.productId,
                                 (item.quantity || 1) - 1,
                                 item.variantId
                               )
@@ -150,7 +149,7 @@ export const CartDrawer = () => {
                           <button
                             onClick={() =>
                               updateQuantity(
-                                typeof item.productId === 'string' ? item.productId : (item.productId as any)._id,
+                                item.productId,
                                 (item.quantity || 1) + 1,
                                 item.variantId
                               )
@@ -165,7 +164,7 @@ export const CartDrawer = () => {
                         <button
                           onClick={() =>
                             removeItem(
-                              typeof item.productId === 'string' ? item.productId : (item.productId as any)._id,
+                              item.productId,
                               item.variantId
                             )
                           }
@@ -204,6 +203,7 @@ export const CartDrawer = () => {
                   <span>Shipping</span>
                   <span>{calculatedShipping === 0 ? 'Free' : `₦${(calculatedShipping as number).toLocaleString()}`}</span>
                 </div>
+                {discount > 0 && <div className="flex justify-between text-[#A67B5B]"><span>Discount</span><span>-₦{discount.toLocaleString()}</span></div>}
                 <div className="flex justify-between text-lg font-semibold text-[#5D3A1A] pt-2 border-t border-[#E8DFD0]">
                   <span>Total</span>
                   <span>₦{calculatedTotal.toLocaleString()}</span>
@@ -213,7 +213,7 @@ export const CartDrawer = () => {
               {/* Actions */}
               <button
                 onClick={handleCheckout}
-                disabled={isLoading}
+                disabled={!canCheckout}
                 className="w-full bg-[#8B5A2B] hover:bg-[#6B4423] text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
                 Proceed to Checkout

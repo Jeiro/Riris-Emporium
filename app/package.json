@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "test:browser": "node tests/task2.browser.mjs"
+    "test:browser": "node tests/task2.browser.mjs",
+    "test:browser:cart": "node tests/task3.browser.mjs",
+    "test:browser:config": "node tests/task3-config.browser.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
