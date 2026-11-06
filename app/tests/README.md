@@ -1,6 +1,6 @@
 # Local regression checks
 
-Run `npm test` with Node 22.23+ for 17 tests covering contact drafts, local wishlist storage, order mapping, cart arithmetic, public configuration validation and login destinations. `npm run build` includes TypeScript checking. The repository's existing lint failures remain documented in `../../docs/TASK2-REPORT.md`.
+Run `npm test` with Node 22.23+ for 26 tests covering contact drafts, local wishlist storage, order mapping, cart arithmetic, public configuration validation and login destinations. `npm run build` includes TypeScript checking. The repository's existing lint failures remain documented in `../../docs/TASK2-REPORT.md`.
 
 The browser suite uses `playwright-core` and installed Google Chrome, without changing the application's dependency lockfile. In this workspace the driver is already installed separately:
 
@@ -42,3 +42,22 @@ The cart suite has 13 check groups: direct checkout hydration; matching totals i
 The configuration suite has five checks: missing URL/key, missing key, malformed URL, privileged key rejection, and the actual production error screen. It uses an empty temporary environment directory and explicit test settings. It never changes `.env.local`, writes its build/cache to its own temporary directory, and deletes that directory on completion. Missing configuration must stop App/Supabase initialization; production must show a generic message without configuration details. Only synthetic key strings are used.
 
 See `../../docs/TASK3-REPORT.md` for current results and remaining limits. The browser tooling remains separate from application dependencies; no lockfile update is needed.
+
+
+## WhatsApp checkout
+
+```bash
+cd /mnt/fedora-storage/Riris-Emporium/app
+npm run dev -- --host 127.0.0.1 --port 5181 --strictPort
+# In another terminal:
+PLAYWRIGHT_MODULE=/home/dragneel/Documents/riris-browser-tools/node_modules/playwright-core/index.mjs \
+TEST_ORIGIN=http://127.0.0.1:5181 \
+TEST_OUTPUT=/home/dragneel/Documents/riris-task4a-work/whatsapp-browser \
+npm run test:browser:whatsapp
+```
+
+The ten check groups cover customer/delivery validation, actual cart amounts, single/multiple products, quantity changes, URL encoding, popup fallback, cart/form preservation, mobile layout, account changes, unavailable/empty carts and rejection of legacy payment/order actions. `window.open` is replaced with a recorder (normal, blocked and throwing cases). Fallback links are inspected without navigation. Every external request is intercepted. No WhatsApp message, payment or live database write is made.
+
+Seven WhatsApp unit tests and two payment-disable unit tests supplement the original 17 tests. The Task 3 browser suite still checks cart arithmetic and account races; its checkout assertions now expect the same merchandise subtotal, while delivery/tax/discount are awaiting confirmation. Cart and drawer retain their old calculations with explicit estimate labels.
+
+No Flutterwave key is required. Actual WhatsApp app launch and message delivery are outside automated coverage. See `../../docs/TASK4-REPORT.md` for the current scope and limitations.

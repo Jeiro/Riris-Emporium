@@ -196,16 +196,16 @@ export const CartDrawer = () => {
                   <span>₦{calculatedSubtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-[#A67B5B]">
-                  <span>Tax (7.5%)</span>
+                  <span>Estimated tax (7.5%)</span>
                   <span>₦{calculatedTax.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-[#A67B5B]">
-                  <span>Shipping</span>
+                  <span>Estimated shipping</span>
                   <span>{calculatedShipping === 0 ? 'Free' : `₦${(calculatedShipping as number).toLocaleString()}`}</span>
                 </div>
-                {discount > 0 && <div className="flex justify-between text-[#A67B5B]"><span>Discount</span><span>-₦{discount.toLocaleString()}</span></div>}
+                {discount > 0 && <div className="flex justify-between text-[#A67B5B]"><span>Estimated discount</span><span>-₦{discount.toLocaleString()}</span></div>}
                 <div className="flex justify-between text-lg font-semibold text-[#5D3A1A] pt-2 border-t border-[#E8DFD0]">
-                  <span>Total</span>
+                  <span>Estimated total</span>
                   <span>₦{calculatedTotal.toLocaleString()}</span>
                 </div>
               </div>

@@ -1,7 +1,8 @@
+import { rejectUnverifiedPayment } from '../lib/paymentAvailability';
 import { isOrderId, mapCustomerOrder, OrderDetailError } from '../lib/orderDetails';
 import type { CustomerOrder } from '../lib/orderDetails';
 import { supabase } from '../lib/supabase';
-import type { Order, Address, PaginationMeta } from '../types';
+import type { Order, PaginationMeta } from '../types';
 
 interface OrdersResponse {
   data: Order[];
@@ -9,53 +10,8 @@ interface OrdersResponse {
 }
 
 export const orderService = {
-  // Create order
-  createOrder: async (
-    shippingAddress: Address,
-    billingAddress?: Address,
-    notes?: string
-  ): Promise<Order> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const { data, error } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          shipping_address: shippingAddress,
-          billing_address: billingAddress,
-          notes,
-          status: 'pending',
-          total: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return {
-        id: data.id,
-        userId: data.user_id,
-        items: data.items || [],
-        total: data.total,
-        status: data.status,
-        shippingAddress: data.shipping_address,
-        billingAddress: data.billing_address,
-        notes: data.notes,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-    } catch (error) {
-      console.error('Supabase error creating order:', error);
-      throw error;
-    }
-  },
+  // Do not create even a zero-total order through an unverified browser workflow.
+  createOrder: rejectUnverifiedPayment,
 
   // Get user orders
   getOrders: async (params?: { page?: number; limit?: number; status?: string }): Promise<OrdersResponse> => {

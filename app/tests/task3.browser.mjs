@@ -152,17 +152,17 @@ try {
   await check('Direct checkout waits for cart hydration and uses catalog prices, not stale stored totals', async () => {
     readDelay = 1500; await go('/checkout');
     await contains('Loading cart'); assert.equal(new URL(page.url()).pathname, '/checkout');
-    await totals(9487.5); await contains('₦9,487.5');
+    await totals(9487.5); await contains('₦6,500'); await contains('Estimated Total (items only)');
     const s = await store(); assert.equal(s.cart.items.length, 2); assert.equal(s.cart.items[0].quantity, 2); assert.equal(s.cart.subtotal, 6500);
     readDelay = 0;
   });
-  await check('Cart, drawer and checkout show the same totals', async () => {
+  await check('Cart and drawer retain shared estimates; WhatsApp checkout uses the same merchandise subtotal', async () => {
     await go('/cart'); await totals(9487.5); await contains('₦9,487.5');
     await page.getByRole('button', { name: 'Cart', exact: true }).click(); await contains('Your Cart (2)');
     assert.equal(await page.getByText('₦9,487.5', { exact: true }).count(), 2);
     await page.getByRole('button', { name: 'Close cart', exact: true }).click();
     await page.getByRole('button', { name: 'Proceed to Checkout', exact: true }).click();
-    await contains('₦9,487.5'); assert.equal(new URL(page.url()).pathname, '/checkout');
+    await contains('₦6,500'); await contains('To be confirmed'); assert.equal(new URL(page.url()).pathname, '/checkout');
   });
   await check('Quantity changes, removal, and repeated add merge lines and update saved estimates', async () => {
     await go('/cart'); await totals(9487.5);
@@ -219,7 +219,7 @@ try {
     await page.getByPlaceholder('you@example.com').fill('a@example.test');
     await page.getByPlaceholder('Enter your password').fill('synthetic-password-only');
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-    await totals(7875); await contains('₦7,875');
+    await totals(7875); await contains('₦5,000');
     assert.equal(new URL(page.url()).pathname, '/checkout'); assert.equal(new URL(page.url()).search, '?source=cart'); assert.equal(new URL(page.url()).hash, '#summary');
   });
   await check('Catalog failure blocks checkout with retry; insufficient stock disables proceeding', async () => {

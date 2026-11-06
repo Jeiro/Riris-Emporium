@@ -2,28 +2,22 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Loader2,
-  CheckCircle2,
-  CreditCard,
+  MessageCircle,
   ShieldCheck,
   Truck,
-  ChevronRight,
   Info
 } from 'lucide-react';
 import { useCart } from '../hooks';
 import { useAuth } from '../hooks';
-import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
-import { toast } from 'sonner';
+import { createWhatsAppOrder, WHATSAPP_CHECKOUT_NOTICE } from '../lib/whatsappCheckout';
+import { useCartStore } from '../store/cartStore';
 
 export const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { items, clearCart, subtotal: calculatedSubtotal, tax: calculatedTax,
-    shipping: calculatedShipping, total: calculatedTotal, discount, isLoading: cartLoading,
+  const { cart, items, subtotal: calculatedSubtotal, isLoading: cartLoading,
     status: cartStatus, error: cartError, retry, canCheckout, notices } = useCart();
-  // These are shared display estimates. Payment settlement still requires a trusted backend.
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -36,103 +30,41 @@ export const Checkout = () => {
     zipCode: ''
   });
 
-  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [draft, setDraft] = useState<{ url: string; message: string; cart: typeof cart; userId: string } | null>(null);
+  const currentDraft = draft?.cart === cart && draft?.userId === user?.id ? draft : null;
 
   useEffect(() => {
-    if (!cartLoading && !cartError && cartStatus === 'ready' && items.length === 0 && !success) {
+    if (!cartLoading && !cartError && cartStatus === 'ready' && items.length === 0) {
       navigate('/cart', { replace: true });
     }
-  }, [cartLoading, cartError, cartStatus, items.length, navigate, success]);
+  }, [cartLoading, cartError, cartStatus, items.length, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    setDraft(null);
+    setError(null);
   };
 
-  const config = {
-    public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY,
-    tx_ref: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-    amount: calculatedTotal,
-    currency: 'NGN',
-    payment_options: 'card,mobilemoney,ussd',
-    customer: {
-      email: formData.email,
-      phone_number: formData.phone,
-      name: `${formData.firstName} ${formData.lastName}`.trim(),
-    },
-    customizations: {
-      title: 'Riri\'s Emporium',
-      description: 'Payment for items in cart',
-      logo: 'https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-online-shop-log.jpg',
-    },
-  };
-
-  const handleFlutterPayment = useFlutterwave(config as any);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsProcessing(true);
-
+    setDraft(null);
     try {
-      if (!formData.firstName || !formData.email || !formData.address) {
-        throw new Error('Please fill in all required fields');
+      const latest = useCartStore.getState();
+      if (!user || !cart || cartLoading || cartError || cartStatus !== 'ready' || !canCheckout ||
+          latest.cart !== cart || latest.ownerId !== user.id || latest.isLoading || latest.status !== 'ready') {
+        throw new Error('Please wait for your cart to load and review any unavailable products.');
       }
-
-      handleFlutterPayment({
-        callback: async (response) => {
-          if (response.status === "successful") {
-            const { data: orderData, error: orderError } = await supabase
-              .from('orders')
-              .insert([
-                {
-                  user_id: user!.id,
-                  order_number: config.tx_ref,
-                  total: calculatedTotal,
-                  status: 'processing',
-                  shipping_address: {
-                    address: formData.address,
-                    city: formData.city,
-                    state: formData.state,
-                    zipCode: formData.zipCode
-                  },
-                  items: items,
-                  payment_method: 'Flutterwave',
-                  payment_reference: response.transaction_id?.toString() || response.tx_ref,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }
-              ])
-              .select()
-              .single();
-
-            if (orderError) {
-              console.error(orderError)
-              toast.error('Payment succeeded but failed to create order. Please contact support.');
-            } else {
-              clearCart();
-              setSuccess(true);
-              setTimeout(() => {
-                navigate(`/orders/${orderData.id}`);
-              }, 2500);
-            }
-          } else {
-            setError("Payment failed or was cancelled.");
-          }
-          closePaymentModal();
-          setIsProcessing(false);
-        },
-        onClose: () => {
-          setIsProcessing(false);
-        },
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to complete checkout';
-      setError(errorMessage);
-    } finally {
-      setIsProcessing(false);
+      const order = createWhatsAppOrder(items, formData, canCheckout);
+      setDraft({ ...order, cart, userId: user.id });
+      // Browser handoff only. No order/payment writes, cart clearing or sent-message claim.
+      // noopener can return null even on success; always provide a fallback link.
+      try { window.open(order.url, '_blank', 'noopener,noreferrer'); }
+      catch { setError('Your browser could not open WhatsApp. Use the prepared link below.'); }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not prepare your WhatsApp order. Please check your details.');
     }
   };
 
@@ -141,25 +73,7 @@ export const Checkout = () => {
     <h1 className="text-2xl font-bold mb-3">Checkout unavailable</h1><p>{cartError}</p>
     <button className="btn-primary mt-4" onClick={() => void retry()}>Retry</button>
   </div>;
-  if (!success && (cartStatus !== 'ready' || items.length === 0)) return null;
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl shadow-xl border border-[#E8DFD0] p-12 max-w-md w-full text-center animate-scale-in">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 size={48} className="text-emerald-500" />
-          </div>
-          <h2 className="text-3xl font-bold text-[#5D3A1A] mb-4" style={{ fontFamily: 'Playfair Display, serif' }}>Order Placed!</h2>
-          <p className="text-[#A67B5B] mb-8 leading-relaxed">Thank you for your purchase. We've sent a confirmation email to <span className="text-[#8B5A2B] font-bold">{formData.email}</span>.</p>
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-[#F5F1E8] border-t-[#8B5A2B] rounded-full animate-spin" />
-            <p className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest">Preparing your summary...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (cartStatus !== 'ready' || items.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] pb-20">
@@ -177,25 +91,30 @@ export const Checkout = () => {
               <h1 className="text-3xl lg:text-4xl font-bold text-[#5D3A1A]" style={{ fontFamily: 'Playfair Display, serif' }}>
                 Checkout
               </h1>
-              <p className="text-[#A67B5B] text-sm mt-1">Review your items and complete your purchase.</p>
+              <p className="text-[#A67B5B] text-sm mt-1">Review your items and shipping information.</p>
             </div>
           </div>
           <div className="hidden lg:flex items-center gap-3 text-xs font-bold text-[#A67B5B] uppercase tracking-widest bg-white px-6 py-3 rounded-full border border-[#E8DFD0] shadow-sm">
             <ShieldCheck size={16} className="text-emerald-500" />
-            Secure 256-Bit SSL Encryption
+            Checkout overview
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-8 text-red-700 text-sm flex items-center gap-3 animate-shake">
-            <Info size={18} /> {error}
-          </div>
-        )}
+        <div id="whatsapp-checkout-info" role="status" className="bg-white border border-[#E8DFD0] rounded-2xl p-4 mb-8 text-[#5D3A1A] text-sm flex items-center gap-3">
+          <Info size={18} className="shrink-0" /> <p>{WHATSAPP_CHECKOUT_NOTICE}</p>
+        </div>
+
+        {error && <p role="alert" className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6 text-red-700 text-sm">{error}</p>}
+        {currentDraft && <div className="bg-white border border-[#E8DFD0] rounded-2xl p-4 mb-8 text-[#5D3A1A] text-sm space-y-3">
+          <p role="status">Your draft is ready. Nothing has been sent. Review and send the message in WhatsApp. Your cart has not been changed.</p>
+          <a href={currentDraft.url} target="_blank" rel="noopener noreferrer" className="underline font-semibold">Open WhatsApp if it did not open automatically</a>
+          <details><summary className="cursor-pointer">Review order message</summary><pre className="whitespace-pre-wrap break-words mt-3 font-sans">{currentDraft.message}</pre></details>
+        </div>}
 
         <div className="grid lg:grid-cols-3 gap-12">
           {/* Checkout Form */}
           <div className="lg:col-span-2 space-y-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} noValidate className="space-y-8">
               {/* Shipping Information */}
               <div className="bg-white rounded-3xl shadow-sm border border-[#E8DFD0] overflow-hidden">
                 <div className="px-8 py-6 bg-[#F5F1E8] border-b border-[#E8DFD0] flex items-center gap-3">
@@ -240,9 +159,11 @@ export const Checkout = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="phone" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">Phone</label>
+                      <label htmlFor="phone" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">Phone *</label>
                       <input
                         id="phone"
+                        type="tel"
+                        required
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
@@ -266,12 +187,12 @@ export const Checkout = () => {
                   </div>
                   <div className="grid sm:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label htmlFor="city" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">City</label>
-                      <input id="city" name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#D4C4A8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/20 text-[#5D3A1A]" />
+                      <label htmlFor="city" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">City *</label>
+                      <input id="city" required name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#D4C4A8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/20 text-[#5D3A1A]" />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="state" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">State</label>
-                      <input id="state" name="state" value={formData.state} onChange={handleChange} className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#D4C4A8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/20 text-[#5D3A1A]" />
+                      <label htmlFor="state" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">State *</label>
+                      <input id="state" required name="state" value={formData.state} onChange={handleChange} className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#D4C4A8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/20 text-[#5D3A1A]" />
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="zipCode" className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest pl-1">Zip Code</label>
@@ -281,20 +202,20 @@ export const Checkout = () => {
                 </div>
               </div>
 
-              {/* Payment Method Stub */}
+              {/* Manual order handoff */}
               <div className="bg-white rounded-3xl shadow-sm border border-[#E8DFD0] overflow-hidden opacity-90">
                 <div className="px-8 py-6 bg-[#F5F1E8] border-b border-[#E8DFD0] flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-[#D4C4A8] text-[#5D3A1A] flex items-center justify-center font-bold">2</div>
-                  <h2 className="font-bold text-[#5D3A1A] uppercase tracking-wider text-sm">Payment Method</h2>
+                  <h2 className="font-bold text-[#5D3A1A] uppercase tracking-wider text-sm">Order Method</h2>
                 </div>
                 <div className="p-8">
                   <div className="flex items-center gap-4 p-4 bg-[#FAF7F2] border-2 border-[#8B5A2B] rounded-2xl">
                     <div className="w-10 h-10 bg-[#8B5A2B] text-white rounded-full flex items-center justify-center">
-                      <CreditCard size={20} />
+                      <MessageCircle size={20} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-[#5D3A1A] text-sm">Flutterwave / Card Payment</p>
-                      <p className="text-[#A67B5B] text-[10px] uppercase tracking-widest font-bold">Secure Online Payment</p>
+                      <p className="font-bold text-[#5D3A1A] text-sm">WhatsApp Order</p>
+                      <p className="text-[#A67B5B] text-[10px] uppercase tracking-widest font-bold">Payment details confirmed by our team</p>
                     </div>
                     <div className="w-6 h-6 rounded-full border-4 border-[#8B5A2B] flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-[#8B5A2B]" />
@@ -305,20 +226,11 @@ export const Checkout = () => {
 
               <Button
                 type="submit"
-                disabled={isProcessing || !canCheckout}
-                className="w-full bg-[#8B5A2B] hover:bg-[#6B4423] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-[#8B5A2B]/20 transition-all hover:-translate-y-1"
+                disabled={cartLoading || !canCheckout}
+                aria-describedby="whatsapp-checkout-info"
+                className="w-full min-h-12 bg-[#8B5A2B] hover:bg-[#6B4423] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-[#8B5A2B]/20 transition-all hover:-translate-y-1"
               >
-                {isProcessing ? (
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="animate-spin" size={24} />
-                    <span>Processing Securely...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span>Pay ₦{calculatedTotal.toLocaleString()}</span>
-                    <ChevronRight size={20} />
-                  </div>
-                )}
+                Order via WhatsApp
               </Button>
             </form>
           </div>
@@ -354,25 +266,13 @@ export const Checkout = () => {
                     <span className="text-[#A67B5B]">Subtotal</span>
                     <span className="text-[#5D3A1A]">₦{calculatedSubtotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center text-sm font-medium">
-                    <span className="text-[#A67B5B]">VAT (7.5%)</span>
-                    <span className="text-[#5D3A1A]">₦{calculatedTax.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#A67B5B]">Shipping</span>
-                      {calculatedSubtotal > 10000 && <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold">FREE</span>}
-                    </div>
-                    <span className="text-[#5D3A1A]">
-                      {calculatedShipping === 0 ? '₦0' : `₦${calculatedShipping.toLocaleString()}`}
-                    </span>
-                  </div>
+                  <div className="flex justify-between items-center text-sm font-medium gap-4"><span className="text-[#A67B5B]">Delivery</span><span className="text-[#5D3A1A]">To be confirmed</span></div>
+                  <div className="flex justify-between items-center text-sm font-medium gap-4"><span className="text-[#A67B5B]">Taxes and discounts</span><span className="text-[#5D3A1A]">To be confirmed</span></div>
 
-                  {discount > 0 && <div className="flex justify-between text-sm text-[#A67B5B]"><span>Discount</span><span>-₦{discount.toLocaleString()}</span></div>}
                   <div className="pt-6 border-t border-[#F5F1E8] flex justify-between items-end">
                     <div>
-                      <p className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest">Grand Total</p>
-                      <p className="text-3xl font-bold text-[#8B5A2B] mt-1">₦{calculatedTotal.toLocaleString()}</p>
+                      <p className="text-xs font-bold text-[#A67B5B] uppercase tracking-widest">Estimated Total (items only)</p>
+                      <p className="text-3xl font-bold text-[#8B5A2B] mt-1">₦{calculatedSubtotal.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -382,15 +282,11 @@ export const Checkout = () => {
                   <div className="flex items-center gap-3 p-3 bg-[#FAF7F2] rounded-2xl border border-[#E8DFD0]">
                     <Truck size={18} className="text-[#8B5A2B]" />
                     <div>
-                      <p className="text-[10px] font-bold text-[#5D3A1A] uppercase tracking-wider">Fast Delivery</p>
-                      <p className="text-[9px] text-[#A67B5B]">Ships within 24-48 hours</p>
+                      <p className="text-[10px] font-bold text-[#5D3A1A] uppercase tracking-wider">Delivery arrangements</p>
+                      <p className="text-[9px] text-[#A67B5B]">Timing and fee confirmed by our team</p>
                     </div>
                   </div>
-                  <div className="flex justify-center gap-4 opacity-40">
-                    <img src="/visa-logo.png" alt="Visa" className="h-4 object-contain grayscale" />
-                    <img src="/mastercard-logo.png" alt="Mastercard" className="h-4 object-contain grayscale" />
-                    <img src="/flutterwave-logo.png" alt="Flutterwave" className="h-4 object-contain" />
-                  </div>
+
                 </div>
               </div>
             </div>

@@ -164,12 +164,12 @@ export const CartPage = () => {
                 </div>
                 {tax > 0 && (
                   <div className="flex justify-between text-sm text-[#A67B5B]">
-                    <span>Tax (7.5%)</span>
+                    <span>Estimated tax (7.5%)</span>
                     <span>₦{tax.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-[#A67B5B]">
-                  <span>Shipping</span>
+                  <span>Estimated shipping</span>
                   <span className={shipping === 0 ? 'text-emerald-600 font-medium' : ''}>
                     {shipping === 0 ? 'FREE' : `₦${shipping.toLocaleString()}`}
                   </span>
@@ -184,11 +184,11 @@ export const CartPage = () => {
 
               <div className="border-t border-[#F5F1E8] pt-4 mb-6">
                 <div className="flex justify-between font-bold text-[#5D3A1A]">
-                  <span className="text-lg">Total</span>
+                  <span className="text-lg">Estimated total</span>
                   <span className="text-xl text-[#8B5A2B]">₦{total.toLocaleString()}</span>
                 </div>
                 {subtotal > 10000 && (
-                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✓ You qualify for free shipping!</p>
+                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✓ Free shipping estimate — confirmation required</p>
                 )}
               </div>
 
@@ -201,7 +201,7 @@ export const CartPage = () => {
               </button>
 
               <p className="text-xs text-center text-[#A67B5B] flex items-center justify-center gap-1">
-                🔒 Secure checkout powered by Flutterwave
+                Estimates only. Final amount and payment details confirmed on WhatsApp.
               </p>
             </div>
           </div>
