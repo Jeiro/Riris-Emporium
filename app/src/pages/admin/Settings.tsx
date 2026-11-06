@@ -7,7 +7,6 @@ import {
   Shield,
   Mail,
   Save,
-  Loader2,
   Globe,
   Zap,
   Lock,
@@ -21,11 +20,9 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
 import { Textarea } from '../../components/ui/textarea';
-import { toast } from 'sonner';
 
 export const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('store');
-  const [isSaving, setIsSaving] = useState(false);
 
   const tabs = [
     { id: 'store', label: 'Commercial Identity', icon: Store, description: 'Store branding and public details' },
@@ -34,13 +31,6 @@ export const AdminSettings = () => {
     { id: 'notifications', label: 'Alert Protocols', icon: Bell, description: 'Customer and admin notifications' },
     { id: 'security', label: 'Security Vault', icon: Shield, description: 'Access control and verification' }
   ];
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    toast.success('Configuration synchronized successfully');
-    setIsSaving(false);
-  };
 
   const SectionHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
     <div className="mb-8">
@@ -59,7 +49,8 @@ export const AdminSettings = () => {
 
   return (
     <AdminLayout>
-      <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-10">
+      <fieldset disabled aria-describedby="settings-unavailable" className="p-6 lg:p-10 max-w-7xl mx-auto space-y-10 min-w-0">
+        <p id="settings-unavailable" role="status">Settings are unavailable. These sample values are not connected to the store and cannot be saved.</p>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -69,12 +60,11 @@ export const AdminSettings = () => {
           </div>
 
           <Button
-            onClick={handleSave}
-            disabled={isSaving}
+            disabled
             className="h-14 px-10 bg-[#8B5A2B] hover:bg-[#6B4423] text-white rounded-2xl shadow-xl shadow-[#8B5A2B]/20 transition-all hover:-translate-y-0.5 group"
           >
-            {isSaving ? <Loader2 className="animate-spin mr-2" size={20} /> : <Save className="mr-2 group-hover:scale-110 transition-transform" size={20} />}
-            <span className="font-bold uppercase tracking-widest text-xs">Save Configuration</span>
+            <Save className="mr-2" size={20} />
+            <span className="font-bold uppercase tracking-widest text-xs">Settings Unavailable</span>
           </Button>
         </div>
 
@@ -272,7 +262,7 @@ export const AdminSettings = () => {
             </div>
           </div>
         </div>
-      </div>
+      </fieldset>
     </AdminLayout>
   );
 };

@@ -7,6 +7,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { orderService } from '../../services/orderService';
 import { useAuth } from '../../hooks';
 import { AdminLayout } from '../../components/layout/AdminLayout';
 
@@ -104,11 +105,13 @@ export const AdminOrders = () => {
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
+    setError(null);
     try {
-      await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      const saved = await orderService.updateOrderStatus(orderId, newStatus);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: saved.status } : o));
     } catch (err) {
       if (import.meta.env.DEV) console.error('Status update error:', err);
+      setError('Could not confirm the order status update. Refresh orders before retrying.');
     } finally {
       setUpdatingId(null);
     }

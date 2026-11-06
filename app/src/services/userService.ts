@@ -1,3 +1,4 @@
+import { profileWritePayload } from '../lib/profilePayload';
 import { supabase } from '../lib/supabase';
 import type { User, ShippingAddress, PaginationMeta } from '../types';
 
@@ -25,6 +26,7 @@ export const userService = {
       email: data.email,
       firstName: data.name,
       lastName: data.last_name,
+      phone: data.phone,
       role: data.role || 'customer'
     };
   },
@@ -36,11 +38,7 @@ export const userService = {
 
     const { data: updatedData, error } = await supabase
       .from('users')
-      .update({
-        name: data.firstName,
-        last_name: data.lastName,
-        updated_at: new Date().toISOString()
-      })
+      .update(profileWritePayload(data))
       .eq('id', user.id)
       .select()
       .single();
@@ -52,6 +50,7 @@ export const userService = {
       email: updatedData.email,
       firstName: updatedData.name,
       lastName: updatedData.last_name,
+      phone: updatedData.phone,
       role: updatedData.role
     };
   },
@@ -160,6 +159,7 @@ export const userService = {
       email: data.email,
       firstName: data.name,
       lastName: data.last_name,
+      phone: data.phone,
       role: data.role
     };
   },
@@ -184,6 +184,7 @@ export const userService = {
       email: updatedData.email,
       firstName: updatedData.name,
       lastName: updatedData.last_name,
+      phone: updatedData.phone,
       role: updatedData.role
     };
   },

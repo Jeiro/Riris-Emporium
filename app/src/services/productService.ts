@@ -1,3 +1,5 @@
+import { catalogQuery } from '../lib/catalogQuery';
+import { productWritePayload } from '../lib/productPayload';
 import { supabase } from '../lib/supabase';
 import { mapSupabaseProductToFrontend } from '../lib/dataMapping';
 import type { Product, ProductFilters, PaginationMeta } from '../types';
@@ -18,33 +20,17 @@ export const productService = {
   // Get all products
   getProducts: async (filters?: ProductFilters): Promise<ProductsResponse> => {
     try {
-      let query = supabase.from('products').select('*');
-
-      if (filters?.category) {
-        query = query.eq('category', filters.category);
-      }
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-      if (filters?.minPrice) {
-        query = query.gte('price', filters.minPrice);
-      }
-      if (filters?.maxPrice) {
-        query = query.lte('price', filters.maxPrice);
-      }
-
-      const page = filters?.page || 1;
-      const limit = filters?.limit || 12;
-      const offset = (page - 1) * limit;
-
-      // Get total count
-      const { count } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
-
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      const { page, limit, offset, sort, searchExpression } = catalogQuery(filters);
+      // One filtered request provides both rows and the matching count.
+      let query = supabase.from('products').select('*', { count: 'exact' });
+      if (filters?.category) query = query.eq('category', filters.category);
+      if (searchExpression) query = query.or(searchExpression);
+      if (filters?.minPrice !== undefined) query = query.gte('price', filters.minPrice);
+      if (filters?.maxPrice !== undefined) query = query.lte('price', filters.maxPrice);
+      if (filters?.featured) query = query.eq('featured', true);
+      if (filters?.inStock) query = query.gt('stock', 0);
+      const { data, count, error } = await query.order(sort.column, { ascending: sort.ascending })
+        .order('id', { ascending: true }).range(offset, offset + limit - 1);
 
       if (error) throw error;
 
@@ -87,7 +73,7 @@ export const productService = {
       const { data, error } = await supabase
         .from('products')
         .select('category')
-        .neq('category', null);
+        .not('category', 'is', null);
 
       if (error) throw error;
 
@@ -156,16 +142,13 @@ export const productService = {
   // Create product (admin)
   createProduct: async (data: Partial<Product>): Promise<Product> => {
     try {
-      const insertPayload: any = {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        image: (data as any).image || (data.images?.[0] ?? null),
-        category: data.category,
-        stock: (data as any).stock ?? (data as any).inventory?.quantity ?? 0,
-        featured: (data as any).featured ?? data.isFeatured ?? false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+      const now = new Date().toISOString();
+      const insertPayload = {
+        ...productWritePayload(data),
+        stock: data.inventory?.quantity ?? 0,
+        featured: data.isFeatured ?? false,
+        created_at: now,
+        updated_at: now
       };
 
       const { data: newProduct, error } = await supabase
@@ -189,7 +172,7 @@ export const productService = {
       const { data: updatedProduct, error } = await supabase
         .from('products')
         .update({
-          ...data,
+          ...productWritePayload(data),
           updated_at: new Date().toISOString()
         })
         .eq('id', id)

@@ -146,7 +146,7 @@ export const AdminDashboard = () => {
       value: `₦${(stats?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       bg: 'bg-emerald-500',
-      change: '+12.5%',
+      change: null,
       positive: true,
     },
     {
@@ -154,7 +154,7 @@ export const AdminDashboard = () => {
       value: stats?.totalOrders || 0,
       icon: ShoppingCart,
       bg: 'bg-blue-500',
-      change: '+8.2%',
+      change: null,
       positive: true,
     },
     {
@@ -162,7 +162,7 @@ export const AdminDashboard = () => {
       value: stats?.totalCustomers || 0,
       icon: Users,
       bg: 'bg-purple-500',
-      change: '+5.1%',
+      change: null,
       positive: true,
     },
     {

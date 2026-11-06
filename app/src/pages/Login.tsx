@@ -134,9 +134,7 @@ export const Login = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-semibold text-[#5D3A1A]">Password</label>
-                <Link to="/forgot-password" className="text-xs text-[#8B5A2B] hover:text-[#6B4423] transition-colors">
-                  Forgot password?
-                </Link>
+                <span className="text-xs text-[#8B5A2B]">Account recovery unavailable during setup</span>
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A67B5B]" size={18} />

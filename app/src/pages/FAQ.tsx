@@ -50,7 +50,7 @@ export const FAQ = () => {
       items: [
         {
           question: 'How do I place an order?',
-          answer: 'Placing an order is easy! Simply browse our products, add items to your cart, and proceed to checkout. You will need to create an account or sign in, provide your shipping address, and complete payment through our secure Flutterwave integration.'
+          answer: 'Add products to your cart, sign in and enter your delivery details at checkout. Review the WhatsApp draft and send it yourself. Our team confirms availability, the final amount and payment arrangements. Opening WhatsApp does not confirm or pay for an order.'
         },
         {
           question: 'How long does shipping take?',
@@ -66,7 +66,7 @@ export const FAQ = () => {
         },
         {
           question: 'How do I track my order?',
-          answer: 'Once your order is shipped, you will receive an email with a tracking number. You can use this number to track your package on our website under "My Orders" or directly on the courier\'s website.'
+          answer: 'Ask our team for delivery updates in your WhatsApp conversation. This website does not automatically create or track WhatsApp orders or send tracking emails.'
         }
       ]
     },
@@ -81,7 +81,7 @@ export const FAQ = () => {
         },
         {
           question: 'How do I initiate a return?',
-          answer: 'To initiate a return, log into your account, go to "My Orders," select the order you want to return, and click "Return Items." Follow the prompts to complete your return request. You can also contact our support team for assistance.'
+          answer: 'Contact the store through your WhatsApp conversation or the Contact page to discuss a return. This website has no automated return-request workflow.'
         },
         {
           question: 'When will I receive my refund?',
@@ -104,23 +104,23 @@ export const FAQ = () => {
       items: [
         {
           question: 'What payment methods do you accept?',
-          answer: 'We accept various payment methods including debit/credit cards (Visa, Mastercard, Verve), bank transfers, and USSD payments through our secure Flutterwave integration. All transactions are encrypted and secure.'
+          answer: 'Online payment is unavailable. Our team will confirm payment arrangements and the final amount through WhatsApp before you pay.'
         },
         {
           question: 'Is my payment information secure?',
-          answer: 'Absolutely! We use Flutterwave, a PCI-DSS compliant payment processor, to handle all transactions. Your card details are never stored on our servers. All data is encrypted using industry-standard SSL technology.'
+          answer: 'This checkout does not collect card details or process payments. Do not include card numbers, PINs or passwords in your order message.'
         },
         {
           question: 'Can I pay on delivery?',
-          answer: 'Currently, we do not offer pay-on-delivery options. All orders must be paid for at checkout using one of our accepted payment methods.'
+          answer: 'Ask our team to confirm the available payment options for your order through WhatsApp.'
         },
         {
           question: 'Why was my payment declined?',
-          answer: 'Payments may be declined due to insufficient funds, incorrect card details, expired cards, or bank security restrictions. Please verify your information and try again, or contact your bank for assistance.'
+          answer: 'This website does not initiate payments. Contact the store through the existing WhatsApp conversation about any payment you arranged with the team.'
         },
         {
           question: 'Do you offer installment payments?',
-          answer: 'We are working on introducing installment payment options soon. Stay tuned for updates on this feature!'
+          answer: 'Installment payments are not available through this website. Confirm any payment arrangement directly with our team.'
         }
       ]
     },
@@ -131,19 +131,19 @@ export const FAQ = () => {
       items: [
         {
           question: 'Do I need an account to shop?',
-          answer: 'Yes, you need to create an account to place orders. Having an account allows you to track orders, save your shipping information, manage returns, and receive exclusive offers.'
+          answer: 'You can browse without an account. The current cart and WhatsApp checkout require sign-in. Opening WhatsApp does not automatically create an order in your account.'
         },
         {
           question: 'How do I reset my password?',
-          answer: 'Click on "Forgot Password" on the login page, enter your email address, and we will send you a password reset link. Follow the instructions in the email to create a new password.'
+          answer: 'Account recovery is unavailable during setup. Use the Contact page for assistance; never send your password.'
         },
         {
           question: 'How do I update my profile information?',
-          answer: 'Log into your account and go to "My Profile." Here you can update your personal information, shipping addresses, and communication preferences.'
+          answer: 'Use My Profile to update your name and contact phone. Enter delivery information at checkout; saved addresses and communication preferences are not ready for the beta.'
         },
         {
           question: 'Can I have multiple shipping addresses?',
-          answer: 'Yes! You can save multiple shipping addresses in your profile. During checkout, simply select the address you want to use for that order.'
+          answer: 'Saved-address selection is not ready for the beta. Enter the delivery address directly at checkout.'
         },
         {
           question: 'How do I delete my account?',

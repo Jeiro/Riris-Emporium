@@ -296,7 +296,7 @@ export const ProductDetail = () => {
 
                 <WishlistButton productId={product._id} size={22} className="w-14 h-14 bg-white border border-[#E8DFD0] rounded-2xl flex items-center justify-center text-[#5D3A1A] hover:bg-[#F5F1E8] hover:text-[#8B5A2B] transition-all shadow-sm" />
 
-                <button className="w-14 h-14 bg-white border border-[#E8DFD0] rounded-2xl flex items-center justify-center text-[#5D3A1A] hover:bg-[#F5F1E8] hover:text-[#8B5A2B] transition-all shadow-sm">
+                <button disabled aria-label="Sharing unavailable" title="Sharing unavailable; copy this page address to share" className="w-14 h-14 bg-white border border-[#E8DFD0] rounded-2xl flex items-center justify-center text-[#5D3A1A] opacity-50 shadow-sm">
                   <Share2 size={22} />
                 </button>
               </div>

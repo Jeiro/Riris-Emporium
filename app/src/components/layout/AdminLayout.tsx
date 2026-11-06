@@ -10,7 +10,6 @@ import {
   X,
   LogOut,
   Store,
-  BarChart3,
   ChevronLeft,
   ExternalLink
 } from 'lucide-react';
@@ -25,7 +24,6 @@ const navItems = [
   { path: '/admin/products', label: 'Products', icon: Package },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { path: '/admin/users', label: 'Users', icon: Users },
-  { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

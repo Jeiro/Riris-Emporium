@@ -13,7 +13,7 @@ export const ProductFilter = ({ filters, onFilterChange, categories }: ProductFi
   const [localFilters, setLocalFilters] = useState(filters);
 
   const handleApplyFilters = () => {
-    onFilterChange(localFilters);
+    onFilterChange({ ...filters, ...localFilters, page: 1 });
     setIsOpen(false);
   };
 
@@ -46,7 +46,7 @@ export const ProductFilter = ({ filters, onFilterChange, categories }: ProductFi
       <div className="relative">
         <select
           value={filters.sort || '-createdAt'}
-          onChange={(e) => onFilterChange({ ...filters, sort: e.target.value })}
+          onChange={(e) => onFilterChange({ ...filters, sort: e.target.value, page: 1 })}
           className="appearance-none bg-white border border-[#D4C4A8] rounded-lg px-4 py-2 pr-10 text-[#5D3A1A] focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/30 cursor-pointer"
         >
           {sortOptions.map((option) => (
@@ -65,7 +65,7 @@ export const ProductFilter = ({ filters, onFilterChange, categories }: ProductFi
       <div className="relative">
         <select
           value={filters.category || ''}
-          onChange={(e) => onFilterChange({ ...filters, category: e.target.value || undefined })}
+          onChange={(e) => onFilterChange({ ...filters, category: e.target.value || undefined, page: 1 })}
           className="appearance-none bg-white border border-[#D4C4A8] rounded-lg px-4 py-2 pr-10 text-[#5D3A1A] focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/30 cursor-pointer"
         >
           <option value="">All Categories</option>
@@ -83,7 +83,7 @@ export const ProductFilter = ({ filters, onFilterChange, categories }: ProductFi
 
       {/* Filter Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => { setLocalFilters(filters); setIsOpen(!isOpen); }}
         className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
           hasActiveFilters
             ? 'bg-[#8B5A2B] text-white border-[#8B5A2B]'
@@ -121,7 +121,7 @@ export const ProductFilter = ({ filters, onFilterChange, categories }: ProductFi
                 <input
                   type="number"
                   placeholder="Min"
-                  value={localFilters.minPrice || ''}
+                  value={localFilters.minPrice ?? ''}
                   onChange={(e) =>
                     setLocalFilters({
                       ...localFilters,
@@ -134,7 +134,7 @@ export const ProductFilter = ({ filters, onFilterChange, categories }: ProductFi
                 <input
                   type="number"
                   placeholder="Max"
-                  value={localFilters.maxPrice || ''}
+                  value={localFilters.maxPrice ?? ''}
                   onChange={(e) =>
                     setLocalFilters({
                       ...localFilters,

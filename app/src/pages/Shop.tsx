@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { ProductGrid } from '../components/product/ProductGrid';
@@ -13,6 +13,7 @@ export const Shop = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const requestVersion = useRef(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState<ProductFilters>({
     page: 1,
@@ -51,26 +52,31 @@ export const Shop = () => {
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
+    const request = ++requestVersion.current;
     setIsLoading(true);
     try {
       const response = await productService.getProducts(filters);
+      if (request !== requestVersion.current) return;
       setProducts(response.data);
       setTotal(response.meta.total);
       setProductsError(null);
     } catch (error) {
-      const msg = (error as any)?.message || String(error);
+      if (request !== requestVersion.current) return;
+      const msg = error instanceof Error ? error.message : 'Could not load products. Please retry.';
       setProducts([]);
       setTotal(0);
       setProductsError(msg);
       if (import.meta.env.DEV) console.error('Error fetching products:', error);
     } finally {
-      setIsLoading(false);
+      if (request === requestVersion.current) setIsLoading(false);
     }
   }, [filters]);
 
+  const invalidateRequests = useCallback(() => { ++requestVersion.current; }, []);
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    void fetchProducts();
+    return invalidateRequests;
+  }, [fetchProducts, invalidateRequests]);
 
   // Update URL when filters change
   const handleFilterChange = (newFilters: ProductFilters) => {

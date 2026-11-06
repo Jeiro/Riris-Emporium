@@ -1,3 +1,4 @@
+import { profileWritePayload } from '../lib/profilePayload';
 import { supabase } from '../lib/supabase';
 import type { LoginCredentials, RegisterData, User } from '../types';
 
@@ -90,6 +91,7 @@ export const authService = {
           email: authData.user.email || '',
           firstName: insertedProfile?.name || data.firstName || '',
           lastName: insertedProfile?.last_name || data.lastName || '',
+          phone: insertedProfile?.phone ?? data.phone ?? '',
           role: insertedProfile?.role || 'customer'
         },
         accessToken: session?.access_token || '',
@@ -132,6 +134,7 @@ export const authService = {
           email: authData.user.email || '',
           firstName: profileData?.name || '',
           lastName: profileData?.last_name || '',
+          phone: profileData?.phone ?? '',
           role: profileData?.role || 'customer'
         },
         accessToken: authData.session.access_token,
@@ -198,6 +201,7 @@ export const authService = {
         email: user.email || '',
         firstName: profileData?.name || user.user_metadata?.name || '',
         lastName: profileData?.last_name || user.user_metadata?.lastName || '',
+        phone: profileData?.phone ?? '',
         role: profileData?.role || 'customer'
       };
     } catch (error: unknown) {
@@ -253,8 +257,8 @@ export const authService = {
       // Update auth user metadata
       const { error: updateError } = await supabase.auth.updateUser({
         data: {
-          name: data.firstName || '',
-          lastName: data.lastName || ''
+          ...(data.firstName !== undefined ? { name: data.firstName } : {}),
+          ...(data.lastName !== undefined ? { lastName: data.lastName } : {})
         }
       });
       if (updateError) throw updateError;
@@ -262,11 +266,7 @@ export const authService = {
       // Update profile in database
       const { data: profileData, error: profileError } = await supabase
         .from('users')
-        .update({
-          name: data.firstName,
-          last_name: data.lastName,
-          updated_at: new Date().toISOString()
-        })
+        .update(profileWritePayload(data))
         .eq('id', user.id)
         .select()
         .single();
@@ -278,6 +278,7 @@ export const authService = {
         email: user.email || '',
         firstName: profileData?.name || '',
         lastName: profileData?.last_name || '',
+        phone: profileData?.phone ?? '',
         role: profileData?.role || 'customer'
       };
     } catch (error: unknown) {

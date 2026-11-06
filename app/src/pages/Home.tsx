@@ -32,7 +32,7 @@ export const Home = () => {
 
   const features = [
     { icon: Truck, title: 'Free Shipping', description: 'On orders over ₦10,000', color: 'bg-emerald-50 text-emerald-600' },
-    { icon: Shield, title: 'Secure Payment', description: '100% secure with Flutterwave', color: 'bg-blue-50 text-blue-600' },
+    { icon: Shield, title: 'WhatsApp Ordering', description: 'Confirm details with our team', color: 'bg-blue-50 text-blue-600' },
     { icon: RefreshCw, title: 'Easy Returns', description: '30-day return policy', color: 'bg-amber-50 text-amber-600' },
     { icon: Headphones, title: '24/7 Support', description: 'Dedicated support team', color: 'bg-purple-50 text-purple-600' }
   ];
@@ -264,20 +264,21 @@ export const Home = () => {
               Join Our Community
             </h2>
             <p className="text-[#A67B5B] mb-8">
-              Subscribe to receive exclusive offers, early access to new arrivals,
-              and styling tips from our experts.
+              Newsletter subscriptions are not available yet. Please use our contact page for enquiries.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
               <input
                 type="email"
-                placeholder="Enter your email address"
+                placeholder="Subscriptions unavailable"
+                disabled
+                aria-label="Newsletter subscriptions unavailable"
                 className="flex-1 px-5 py-3.5 border border-[#D4C4A8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/30 focus:border-[#8B5A2B] bg-white text-[#5D3A1A] placeholder:text-[#A67B5B]/60 transition-all"
               />
-              <button className="btn-primary whitespace-nowrap px-8 py-3.5 rounded-xl">
+              <button disabled className="btn-primary whitespace-nowrap px-8 py-3.5 rounded-xl disabled:opacity-50">
                 Subscribe
               </button>
             </div>
-            <p className="text-xs text-[#A67B5B] mt-4">No spam. Unsubscribe anytime.</p>
+            <p className="text-xs text-[#A67B5B] mt-4">No email address is collected here.</p>
           </div>
         </div>
       </section>

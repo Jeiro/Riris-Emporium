@@ -17,8 +17,7 @@ export const Footer = () => {
     shop: [
       { name: 'All Collection', href: '/shop' },
       { name: 'New Arrivals', href: '/shop?sort=-createdAt' },
-      { name: 'Best Sellers', href: '/shop?featured=true' },
-      { name: 'Featured Product', href: '/shop' }
+      { name: 'Featured Products', href: '/shop?featured=true' }
     ],
     company: [
       { name: 'Our Story', href: '/about' },
@@ -27,7 +26,7 @@ export const Footer = () => {
     support: [
       { name: 'Size Guide', href: '/size-guide' },
       { name: 'Shipping Info', href: '/shipping' },
-      { name: 'Track Order', href: '/profile' },
+      { name: 'My Orders', href: '/orders' },
       { name: 'Common FAQs', href: '/faq' },
       { name: 'Return Policy', href: '/returns' }
     ],
@@ -68,14 +67,16 @@ export const Footer = () => {
               <div className="relative group">
                 <input
                   type="email"
-                  placeholder="name@email.com"
+                  placeholder="Subscriptions unavailable"
+                  disabled
+                  aria-label="Newsletter subscriptions unavailable"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-[#8B5A2B]/40 focus:border-[#8B5A2B]/50 transition-all font-medium"
                 />
-                <button className="absolute right-2 top-2 bottom-2 bg-[#8B5A2B] hover:bg-[#A67B5B] text-white px-6 rounded-xl transition-all shadow-lg flex items-center justify-center">
+                <button disabled aria-label="Newsletter subscriptions unavailable" className="absolute right-2 top-2 bottom-2 bg-[#8B5A2B] hover:bg-[#A67B5B] text-white px-6 rounded-xl transition-all shadow-lg flex items-center justify-center">
                   <ArrowRight size={18} />
                 </button>
               </div>
-              <p className="text-[10px] text-[#A67B5B] px-1">By subscribing, you agree to our Privacy Policy and Terms of Service.</p>
+              <p className="text-[10px] text-[#A67B5B] px-1">Newsletter unavailable. No email address is collected here.</p>
             </div>
           </div>
 
